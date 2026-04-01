@@ -1,0 +1,14 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Data folders (ignore everything inside)
+Data/
+Data_WP/
+results/
+25_data_split_result/
+50_data_split_result/

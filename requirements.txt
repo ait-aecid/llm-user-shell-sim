@@ -1,0 +1,19 @@
+# Core ML / data stack used by the active project code
+numpy
+scikit-learn
+pandas
+matplotlib
+tqdm
+
+# Deep learning / model pipelines
+torch
+transformers
+sentence-transformers
+openai
+
+# Log template mining
+drain3
+
+# Optional extras used only in archived playground scripts:
+# pyopencl
+# torch-directml
