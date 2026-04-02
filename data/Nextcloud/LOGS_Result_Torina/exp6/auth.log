@@ -1,0 +1,5 @@
+2025-12-17T13:55:01.258540+00:00 finalArenaServer CRON[1549]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:55:01.274104+00:00 finalArenaServer CRON[1549]: pam_unix(cron:session): session closed for user root
+2025-12-17T14:01:34.012278+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/systemctl status apache2
+2025-12-17T14:01:34.020425+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2025-12-17T14:01:37.379221+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root

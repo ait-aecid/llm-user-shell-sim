@@ -1,0 +1,8 @@
+2025-12-17T10:59:59.610982+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T10:59:59.804164+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T10:59:59.805249+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T11:00:24.982153+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T11:00:25.016236+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T11:00:25.017101+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T11:00:28.598092+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-17T11:00:44.209016+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND

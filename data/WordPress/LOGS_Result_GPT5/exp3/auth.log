@@ -1,0 +1,17 @@
+2026-03-09T21:35:02.994372+00:00 arena-wp CRON[1404]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T21:35:03.174070+00:00 arena-wp CRON[1404]: pam_unix(cron:session): session closed for user root
+2026-03-09T21:39:01.190372+00:00 arena-wp CRON[1433]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T21:39:01.196409+00:00 arena-wp CRON[1433]: pam_unix(cron:session): session closed for user root
+2026-03-09T21:43:31.746252+00:00 arena-wp runuser: pam_unix(runuser:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-03-09T21:43:31.765953+00:00 arena-wp runuser: pam_unix(runuser:session): session closed for user www-data
+2026-03-09T21:45:01.210594+00:00 arena-wp CRON[1531]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T21:45:01.234571+00:00 arena-wp CRON[1531]: pam_unix(cron:session): session closed for user root
+2026-03-09T21:55:01.236078+00:00 arena-wp CRON[1587]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T21:55:01.249221+00:00 arena-wp CRON[1587]: pam_unix(cron:session): session closed for user root
+2026-03-09T22:01:41.187492+00:00 arena-wp sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/wordpress/.htaccess
+2026-03-09T22:01:41.191674+00:00 arena-wp sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-03-09T22:01:46.693420+00:00 arena-wp sudo: pam_unix(sudo:session): session closed for user root
+2026-03-09T22:05:01.262192+00:00 arena-wp CRON[1682]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T22:05:01.272921+00:00 arena-wp CRON[1682]: pam_unix(cron:session): session closed for user root
+2026-03-09T22:09:01.282221+00:00 arena-wp CRON[1711]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-09T22:09:01.312450+00:00 arena-wp CRON[1711]: pam_unix(cron:session): session closed for user root

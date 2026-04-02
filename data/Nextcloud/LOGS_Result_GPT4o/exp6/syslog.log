@@ -1,0 +1,19 @@
+2026-01-12T01:08:23.244610+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-12T01:08:50.608288+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-12T01:09:03.390747+00:00 finalArenaServer CRON[1511]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2026-01-12T01:09:08.455501+00:00 finalArenaServer systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2026-01-12T01:09:08.621568+00:00 finalArenaServer systemd[1]: phpsessionclean.service: Deactivated successfully.
+2026-01-12T01:09:08.622159+00:00 finalArenaServer systemd[1]: Finished phpsessionclean.service - Clean php session files.
+2026-01-12T01:09:08.816645+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-12T01:09:17.055987+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-01-12T01:09:17.122934+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2026-01-12T01:09:17.123106+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-01-12T01:09:17.128406+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-01-12T01:09:17.168004+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2026-01-12T01:10:19.870661+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-01-12T01:10:19.909293+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-01-12T01:10:19.909461+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-01-12T01:11:26.859049+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-12T01:11:42.151402+00:00 finalArenaServer systemd[1]: Starting redis-server.service - Advanced key-value store...
+2026-01-12T01:11:42.210605+00:00 finalArenaServer systemd[1]: Started redis-server.service - Advanced key-value store.
+2026-01-12T01:11:51.402615+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND

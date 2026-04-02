@@ -1,0 +1,29 @@
+2026-03-05T11:10:03.774551+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-03-05T11:10:03.789174+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-03-05T11:10:03.790165+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-03-05T11:10:12.341594+00:00 arena-wp systemd[1152]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-03-05T11:15:01.589309+00:00 arena-wp CRON[1652]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-05T11:17:01.604684+00:00 arena-wp CRON[1657]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+2026-03-05T11:17:01.621688+00:00 arena-wp systemd[1]: Starting fwupd-refresh.service - Refresh fwupd metadata and update motd...
+2026-03-05T11:17:01.696984+00:00 arena-wp dbus-daemon[622]: [system] Activating via systemd: service name='org.freedesktop.fwupd' unit='fwupd.service' requested by ':1.24' (uid=989 pid=1658 comm="/usr/bin/fwupdmgr refresh" label="unconfined")
+2026-03-05T11:17:01.709608+00:00 arena-wp systemd[1]: Starting fwupd.service - Firmware update daemon...
+2026-03-05T11:17:02.035370+00:00 arena-wp dbus-daemon[622]: [system] Activating via systemd: service name='org.freedesktop.UPower' unit='upower.service' requested by ':1.25' (uid=0 pid=1664 comm="/usr/libexec/fwupd/fwupd" label="unconfined")
+2026-03-05T11:17:02.051542+00:00 arena-wp systemd[1]: Starting upower.service - Daemon for power management...
+2026-03-05T11:17:02.218063+00:00 arena-wp dbus-daemon[622]: [system] Successfully activated service 'org.freedesktop.UPower'
+2026-03-05T11:17:02.218956+00:00 arena-wp systemd[1]: Started upower.service - Daemon for power management.
+2026-03-05T11:17:02.310391+00:00 arena-wp fwupd[1664]: 11:17:02.309 FuEngine             failed to add device /sys/devices/pci0000:00/0000:00:01.1/ata2/host1/target1:0:0/1:0:0:0/block/sr0: failed to open /dev/sr0: No medium found
+2026-03-05T11:17:02.374218+00:00 arena-wp fwupd[1664]: 11:17:02.374 FuMain               fwupd 1.9.30 ready for requests (locale en_US.UTF-8)
+2026-03-05T11:17:02.377054+00:00 arena-wp dbus-daemon[622]: [system] Successfully activated service 'org.freedesktop.fwupd'
+2026-03-05T11:17:02.377223+00:00 arena-wp systemd[1]: Started fwupd.service - Firmware update daemon.
+2026-03-05T11:17:02.424188+00:00 arena-wp fwupdmgr[1658]: Updating lvfs
+2026-03-05T11:17:07.377701+00:00 arena-wp fwupdmgr[1658]: Successfully downloaded new metadata: 0 local devices supported
+2026-03-05T11:17:07.386399+00:00 arena-wp systemd[1]: fwupd-refresh.service: Deactivated successfully.
+2026-03-05T11:17:07.386504+00:00 arena-wp systemd[1]: Finished fwupd-refresh.service - Refresh fwupd metadata and update motd.
+2026-03-05T11:19:13.239530+00:00 arena-wp systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2026-03-05T11:19:13.263812+00:00 arena-wp systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2026-03-05T11:19:13.264184+00:00 arena-wp systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
+2026-03-05T11:20:03.897439+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-03-05T11:20:03.919504+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-03-05T11:20:03.919687+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-03-05T11:23:24.195376+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 12777447212 wd_nsec: 12777436885
+2026-03-05T11:25:01.673787+00:00 arena-wp CRON[1719]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)

@@ -1,0 +1,17 @@
+2025-12-17T14:04:02.408355+00:00 finalArenaServer systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2025-12-17T14:04:07.607046+00:00 finalArenaServer systemd[1]: systemd-timedated.service: Deactivated successfully.
+2025-12-17T14:05:01.256115+00:00 finalArenaServer CRON[1524]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T14:05:19.159324+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-17T14:06:42.132008+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-17T14:07:39.409609+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-17T14:08:50.241252+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T14:08:50.496599+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T14:08:50.497034+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T14:09:01.297061+00:00 finalArenaServer CRON[1534]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2025-12-17T14:09:05.015925+00:00 finalArenaServer systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2025-12-17T14:09:05.470357+00:00 finalArenaServer systemd[1]: phpsessionclean.service: Deactivated successfully.
+2025-12-17T14:09:05.471187+00:00 finalArenaServer systemd[1]: Finished phpsessionclean.service - Clean php session files.
+2025-12-17T14:09:10.227761+00:00 finalArenaServer systemd[1145]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-17T14:10:00.237234+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T14:10:00.267942+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T14:10:00.268663+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.

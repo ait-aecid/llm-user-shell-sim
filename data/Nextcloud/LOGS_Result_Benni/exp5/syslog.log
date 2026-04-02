@@ -1,0 +1,9 @@
+2025-12-17T12:01:42.008664+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-17T12:03:10.870953+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2025-12-17T12:03:10.945926+00:00 finalArenaServer apachectl[1603]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:03:11.022834+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2025-12-17T12:03:11.024176+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2025-12-17T12:03:11.024262+00:00 finalArenaServer systemd[1]: apache2.service: Consumed 4.063s CPU time, 131.1M memory peak, 0B memory swap peak.
+2025-12-17T12:03:11.035628+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2025-12-17T12:03:11.095232+00:00 finalArenaServer apachectl[1609]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:03:11.113490+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.

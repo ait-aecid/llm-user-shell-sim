@@ -1,0 +1,13 @@
+2026-03-09T21:29:15.949357+00:00 arena-wp systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2026-03-09T21:29:18.288511+00:00 arena-wp systemd-timesyncd[458]: Contacted time server 162.159.200.1:123 (2.ubuntu.pool.ntp.org).
+2026-03-09T21:29:18.288577+00:00 arena-wp systemd-timesyncd[458]: Initial clock synchronization to Mon 2026-03-09 21:29:18.287970 UTC.
+2026-03-09T21:29:18.289257+00:00 arena-wp systemd-resolved[455]: Clock change detected. Flushing caches.
+2026-03-09T21:29:20.192753+00:00 arena-wp systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-03-09T21:29:30.940855+00:00 arena-wp mariadbd[936]: 2026-03-09 21:29:30 31 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-09T21:30:09.816651+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-03-09T21:30:09.845612+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-03-09T21:30:09.845695+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-03-09T21:31:15.922267+00:00 arena-wp mariadbd[936]: 2026-03-09 21:31:15 32 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-09T21:32:43.428395+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T21:32:43.543542+00:00 arena-wp apachectl[1374]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T21:32:43.590145+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.

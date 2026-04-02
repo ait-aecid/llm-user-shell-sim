@@ -1,0 +1,35 @@
+2026-02-26T11:32:20.136799+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-26T11:32:23.645843+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-02-26T11:33:47.449303+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-26T11:33:48.233404+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-26T11:34:25.637824+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-24T11:43:22.796218+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 5520896671 wd_nsec: 5520896284
+2026-02-24T11:44:51.396275+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-02-24T11:45:02.015883+00:00 arena-wp CRON[1524]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-05T11:31:33.375690+00:00 arena-wp systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2026-03-05T11:31:36.454018+00:00 arena-wp systemd-resolved[421]: Clock change detected. Flushing caches.
+2026-03-05T11:31:36.454894+00:00 arena-wp systemd-timesyncd[424]: Contacted time server 162.159.200.123:123 (2.ubuntu.pool.ntp.org).
+2026-03-05T11:31:36.455118+00:00 arena-wp systemd-timesyncd[424]: Initial clock synchronization to Thu 2026-03-05 11:31:36.453389 UTC.
+2026-03-05T11:31:36.475943+00:00 arena-wp systemd[1]: Starting apt-daily-upgrade.service - Daily apt upgrade and clean activities...
+2026-03-05T11:31:36.723830+00:00 arena-wp systemd[1]: apt-daily-upgrade.service: Deactivated successfully.
+2026-03-05T11:31:36.724044+00:00 arena-wp systemd[1]: Finished apt-daily-upgrade.service - Daily apt upgrade and clean activities.
+2026-03-05T11:31:41.523715+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-03-05T11:31:41.539775+00:00 arena-wp systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-03-05T11:31:45.988291+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 2957348974 wd_nsec: 2957346693
+2026-03-05T11:31:53.891333+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 6346152798 wd_nsec: 6346147846
+2026-03-05T11:34:02.066667+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-26T14:11:27.151062+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-26T14:11:42.965519+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 4412419008 wd_nsec: 4412418677
+2026-02-26T14:12:48.846504+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-26T14:14:18.782519+00:00 arena-wp systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-02-26T14:14:19.166708+00:00 arena-wp apachectl[1615]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-02-26T14:14:19.490655+00:00 arena-wp systemd[1]: apache2.service: Deactivated successfully.
+2026-02-26T14:14:19.491922+00:00 arena-wp systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-02-26T14:14:19.495591+00:00 arena-wp systemd[1]: apache2.service: Consumed 2.543s CPU time, 39.4M memory peak, 0B memory swap peak.
+2026-02-26T14:14:19.557177+00:00 arena-wp systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-02-26T14:14:19.801827+00:00 arena-wp apachectl[1621]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-02-26T14:14:19.861822+00:00 arena-wp systemd[1]: Started apache2.service - The Apache HTTP Server.
+2026-02-26T14:14:21.322759+00:00 arena-wp kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-02-26T14:14:24.898488+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-02-26T14:14:25.548758+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-02-26T14:14:25.716655+00:00 arena-wp kernel: workqueue: blk_mq_requeue_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND

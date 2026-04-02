@@ -1,0 +1,18 @@
+2026-01-11T23:24:28.494906+00:00 finalArenaServer systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-01-11T23:24:31.404874+00:00 finalArenaServer systemd-resolved[417]: Clock change detected. Flushing caches.
+2026-01-11T23:24:31.405058+00:00 finalArenaServer systemd-timesyncd[422]: Contacted time server 162.159.200.1:123 (2.ubuntu.pool.ntp.org).
+2026-01-11T23:24:31.405274+00:00 finalArenaServer systemd-timesyncd[422]: Initial clock synchronization to Sun 2026-01-11 23:24:31.403466 UTC.
+2026-01-11T23:24:49.790921+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T23:25:03.021145+00:00 finalArenaServer CRON[1445]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-01-11T23:25:11.984084+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-11T23:25:36.935012+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-01-11T23:25:37.013925+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2026-01-11T23:25:37.014358+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-01-11T23:25:37.022894+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-01-11T23:25:37.060166+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2026-01-11T23:25:55.370493+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-11T23:26:36.891906+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-01-11T23:26:36.978872+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2026-01-11T23:26:36.980059+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-01-11T23:26:36.987333+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-01-11T23:26:37.021111+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.

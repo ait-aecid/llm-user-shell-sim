@@ -1,0 +1,12 @@
+2026-02-26T11:38:00.645988+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-26T11:38:20.629864+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 4521446183 wd_nsec: 4521445804
+2026-02-26T11:39:01.336200+00:00 arena-wp CRON[1537]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2026-02-26T11:39:10.849069+00:00 arena-wp systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2026-02-26T11:39:11.545258+00:00 arena-wp systemd[1]: phpsessionclean.service: Deactivated successfully.
+2026-02-26T11:39:11.546008+00:00 arena-wp systemd[1]: Finished phpsessionclean.service - Clean php session files.
+2026-02-26T11:39:33.671368+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-26T11:40:16.049072+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-02-26T11:40:16.093135+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-02-26T11:40:16.093969+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-02-26T11:40:22.941600+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-26T11:40:26.980103+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND

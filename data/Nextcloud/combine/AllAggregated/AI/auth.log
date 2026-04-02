@@ -1,0 +1,230 @@
+2026-01-11T21:37:14.140501+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
+2026-01-11T21:37:14.143963+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T21:37:20.044956+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-11T22:30:47.090236+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
+2026-01-11T22:30:47.092169+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:30:51.644835+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-11T21:55:02.428414+00:00 finalArenaServer CRON[1457]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T21:55:02.482211+00:00 finalArenaServer CRON[1457]: pam_unix(cron:session): session closed for user root2026-01-11T22:04:12.715932+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-11T22:04:12.727083+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:04:13.937588+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:04:24.657595+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:disable files
+2026-01-11T22:04:24.662340+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:04:25.141870+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:05:01.447683+00:00 finalArenaServer CRON[1542]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:05:01.456650+00:00 finalArenaServer CRON[1542]: pam_unix(cron:session): session closed for user root
+2026-01-11T22:05:18.539759+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-11T22:05:18.541518+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:05:20.312132+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:05:31.400373+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:check files
+2026-01-11T22:05:31.411053+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:05:31.918783+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:05:43.067456+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ integrity:check-app files
+2026-01-11T22:05:43.080514+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:05:43.836195+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:06:09.791145+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:update files
+2026-01-11T22:06:09.801915+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:06:14.584693+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:06:26.081849+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:remove files
+2026-01-11T22:06:26.087621+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:06:26.577048+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:08:26.880565+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ integrity:check-app files
+2026-01-11T22:08:26.882842+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T22:08:27.601023+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T22:08:38.205857+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/systemctl restart apache2
+2026-01-11T22:08:38.222839+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:08:39.069125+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T22:09:01.537194+00:00 finalArenaServer CRON[1668]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:09:01.542790+00:00 finalArenaServer CRON[1668]: pam_unix(cron:session): session closed for user root2026-01-11T22:15:01.471651+00:00 finalArenaServer CRON[1519]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:15:01.483052+00:00 finalArenaServer CRON[1519]: pam_unix(cron:session): session closed for user root
+2026-01-11T22:15:27.205334+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/php/8.3/apache2/conf.d/99-memory-limit.ini
+2026-01-11T22:15:27.206895+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:15:32.678785+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-12T00:55:01.323485+00:00 finalArenaServer CRON[1643]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:55:01.333782+00:00 finalArenaServer CRON[1643]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:56:04.119482+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-12T00:56:04.126738+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:56:04.728588+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:56:16.185386+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-12T00:56:16.188662+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:56:17.923915+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:56:39.126291+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:disable firstrunwizard
+2026-01-12T00:56:39.128027+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:56:39.669048+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:56:51.129855+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-12T00:56:51.131882+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:56:52.537241+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:57:20.792027+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ upgrade
+2026-01-12T00:57:20.796792+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:57:21.340892+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:57:31.907751+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ status
+2026-01-12T00:57:31.911435+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:57:32.317650+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:58:15.007288+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:remove firstrunwizard
+2026-01-12T00:58:15.011219+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:58:15.585919+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:58:49.935300+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-12T00:58:49.936705+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:58:51.200828+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:01:02.787347+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:mode --on
+2026-01-12T01:01:02.790777+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:01:03.197043+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:01:14.288348+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-12T01:01:14.290209+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:01:15.498171+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:01:27.227449+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:mode --off
+2026-01-12T01:01:27.231845+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:01:27.484156+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:01:45.602432+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ check
+2026-01-12T01:01:45.607864+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:01:46.083356+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:01:57.302087+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ status
+2026-01-12T01:01:57.305757+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:01:57.786693+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:02:09.075898+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-12T01:02:09.079249+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:02:09.651097+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:02:21.403010+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ config:system:get loglevel
+2026-01-12T01:02:21.409030+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:02:21.866982+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:02:33.617105+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ config:system:get logfile
+2026-01-12T01:02:33.622703+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:02:34.077826+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:02:56.563517+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ db:integrity:check-core
+2026-01-12T01:02:56.572091+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:02:57.146642+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:03:08.506601+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ integrity:check-core
+2026-01-12T01:03:08.509588+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:03:22.479805+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:03:33.883371+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ upgrade
+2026-01-12T01:03:33.888912+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:03:34.292393+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:03:50.980301+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ log:tail --lines=30
+2026-01-12T01:03:50.984022+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:03:51.390860+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:04:01.418796+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ log:tail 40
+2026-01-12T01:04:01.422892+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T01:04:02.185926+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T01:05:01.412971+00:00 finalArenaServer CRON[1787]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:05:01.474082+00:00 finalArenaServer CRON[1787]: pam_unix(cron:session): session closed for user root2026-01-11T22:23:37.277414+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/sites-enabled/nextcloud.conf
+2026-01-11T22:23:37.280632+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:23:41.896840+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-12T01:25:01.407627+00:00 finalArenaServer CRON[1541]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:25:01.420379+00:00 finalArenaServer CRON[1541]: pam_unix(cron:session): session closed for user root
+2026-01-12T01:26:13.020347+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
+2026-01-12T01:26:13.029483+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T01:26:18.682084+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-12T01:32:43.663688+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/sites-available/000-default.conf
+2026-01-12T01:32:43.667513+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T01:32:48.152425+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-12T01:35:02.123230+00:00 finalArenaServer CRON[1507]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:35:02.183511+00:00 finalArenaServer CRON[1507]: pam_unix(cron:session): session closed for user root2026-01-12T01:39:01.647118+00:00 finalArenaServer CRON[1485]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:39:01.651305+00:00 finalArenaServer CRON[1485]: pam_unix(cron:session): session closed for user root2026-01-12T01:45:01.517837+00:00 finalArenaServer CRON[1467]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:45:01.528745+00:00 finalArenaServer CRON[1467]: pam_unix(cron:session): session closed for user root2026-01-12T01:53:26.419479+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/hosts
+2026-01-12T01:53:26.420865+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T01:53:32.458188+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-12T01:55:01.908611+00:00 finalArenaServer CRON[1486]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:55:01.916895+00:00 finalArenaServer CRON[1486]: pam_unix(cron:session): session closed for user root
+2026-01-12T01:58:00.429140+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/php/8.3/apache2/conf.d/99-memory-limit.ini
+2026-01-12T01:58:00.430610+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T01:58:04.939243+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-12T02:09:01.799976+00:00 finalArenaServer CRON[1513]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T02:09:01.874187+00:00 finalArenaServer CRON[1513]: pam_unix(cron:session): session closed for user root
+2026-01-12T02:15:01.023797+00:00 finalArenaServer CRON[1643]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T02:15:01.043801+00:00 finalArenaServer CRON[1643]: pam_unix(cron:session): session closed for user root
+2026-01-12T02:17:01.079241+00:00 finalArenaServer CRON[1665]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T02:17:01.162408+00:00 finalArenaServer CRON[1665]: pam_unix(cron:session): session closed for user root2026-01-12T02:02:58.884723+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/sites-enabled/nextcloud.conf
+2026-01-12T02:02:58.889135+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T02:03:03.586877+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T22:34:31.356190+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-11T22:34:31.358882+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:34:41.130870+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T22:35:01.269367+00:00 finalArenaServer CRON[1557]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:35:01.341788+00:00 finalArenaServer CRON[1557]: pam_unix(cron:session): session closed for user root
+2026-01-11T22:35:15.004104+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
+2026-01-11T22:35:15.009851+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:35:20.719642+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-11T22:37:56.901709+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-11T22:37:56.903767+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:38:07.627402+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T22:39:01.803568+00:00 finalArenaServer CRON[1608]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:39:01.845616+00:00 finalArenaServer CRON[1608]: pam_unix(cron:session): session closed for user root2026-01-26T09:53:46.433207+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-26T09:53:46.435541+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-26T09:53:57.902105+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-26T09:55:01.068096+00:00 finalArenaServer CRON[1544]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-26T09:55:01.093347+00:00 finalArenaServer CRON[1544]: pam_unix(cron:session): session closed for user root
+2026-01-26T09:55:28.098356+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-26T09:55:28.102077+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-26T09:55:29.020325+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-26T09:55:38.576567+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-26T09:55:38.581220+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-26T09:55:40.204257+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data2026-01-11T23:01:37.354789+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-11T23:01:37.358561+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T23:01:49.082671+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-12T01:08:56.626863+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-12T01:08:56.628115+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T01:09:03.388337+00:00 finalArenaServer CRON[1510]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T01:09:03.398659+00:00 finalArenaServer CRON[1510]: pam_unix(cron:session): session closed for user root
+2026-01-12T01:09:08.448011+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-11T23:25:03.019959+00:00 finalArenaServer CRON[1444]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T23:25:03.032777+00:00 finalArenaServer CRON[1444]: pam_unix(cron:session): session closed for user root
+2026-01-11T23:25:19.407820+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-01-11T23:25:19.410246+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T23:25:26.849801+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T23:26:24.760671+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/sites-available/000-default.conf
+2026-01-11T23:26:24.762071+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T23:26:29.682146+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-11T23:32:41.243901+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
+2026-01-11T23:32:41.246315+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T23:32:46.171046+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2026-01-11T23:39:01.224620+00:00 finalArenaServer CRON[1444]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T23:39:01.251824+00:00 finalArenaServer CRON[1444]: pam_unix(cron:session): session closed for user root2026-01-11T23:55:03.098940+00:00 finalArenaServer CRON[1428]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T23:55:03.122864+00:00 finalArenaServer CRON[1428]: pam_unix(cron:session): session closed for user root
+2026-01-11T23:59:01.184525+00:00 finalArenaServer CRON[1781]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T23:59:01.201188+00:00 finalArenaServer CRON[1781]: pam_unix(cron:session): session closed for user root
+2026-01-11T23:59:23.868824+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ user:list
+2026-01-11T23:59:23.870615+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T23:59:24.484246+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-11T23:59:52.047794+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ user:resetpassword --help
+2026-01-11T23:59:52.049048+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-11T23:59:52.391471+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:00:01.214372+00:00 finalArenaServer CRON[1797]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:00:01.221814+00:00 finalArenaServer CRON[1797]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:00:16.586547+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; ENV=OC_PASS=Admin12345! ; COMMAND=/usr/bin/php /var/www/nextcloud/occ user:resetpassword --password-from-env Admin
+2026-01-12T00:00:16.588511+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:00:17.523245+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:00:50.982637+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; ENV=OC_PASS=Yb9@kV3v!s9N6wQ2#pLJ ; COMMAND=/usr/bin/php /var/www/nextcloud/occ user:resetpassword --password-from-env Admin
+2026-01-12T00:00:50.984565+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:00:51.831621+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data2026-01-12T00:05:01.351339+00:00 finalArenaServer CRON[1450]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:05:01.366759+00:00 finalArenaServer CRON[1450]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:05:23.684517+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php -d detect_unicode=0 /var/www/nextcloud/occ log:tail --lines=100
+2026-01-12T00:05:23.686330+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:05:24.451564+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:05:35.600029+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ log:tail 150
+2026-01-12T00:05:35.602320+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:05:36.895673+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:06:20.576983+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-12T00:06:20.578364+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:06:20.959808+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:08:30.253985+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:status files
+2026-01-12T00:08:30.257054+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:08:30.602143+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:09:01.968989+00:00 finalArenaServer CRON[1530]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:09:01.980631+00:00 finalArenaServer CRON[1530]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:09:29.231765+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2026-01-12T00:09:29.232943+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:09:29.553991+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:09:53.921815+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ integrity:check-app files
+2026-01-12T00:09:53.922961+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:09:54.519774+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:11:38.701652+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ integrity:check-app files
+2026-01-12T00:11:38.704829+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:11:39.123318+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2026-01-12T00:11:50.717484+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ maintenance:repair
+2026-01-12T00:11:50.719934+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:11:51.996584+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data2026-01-12T00:17:03.010492+00:00 finalArenaServer CRON[1432]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:17:03.022081+00:00 finalArenaServer CRON[1432]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:23:59.895755+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/php/8.3/apache2/conf.d/99-memory-limit.ini
+2026-01-12T00:23:59.898062+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T00:24:04.593458+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2026-01-12T00:25:01.043224+00:00 finalArenaServer CRON[1490]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:25:01.071029+00:00 finalArenaServer CRON[1490]: pam_unix(cron:session): session closed for user root2026-01-12T00:35:01.152342+00:00 finalArenaServer CRON[1526]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:35:01.162218+00:00 finalArenaServer CRON[1526]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:39:01.379478+00:00 finalArenaServer CRON[1588]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-12T00:39:01.389557+00:00 finalArenaServer CRON[1588]: pam_unix(cron:session): session closed for user root
+2026-01-12T00:41:01.256481+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php -d display_errors=1 /var/www/nextcloud/occ status
+2026-01-12T00:41:01.260064+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2026-01-12T00:41:01.668107+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data2026-01-12T00:29:05.682009+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/sites-enabled/nextcloud.conf
+2026-01-12T00:29:05.683392+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-12T00:29:10.790212+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root

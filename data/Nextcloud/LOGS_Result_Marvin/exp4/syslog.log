@@ -1,0 +1,53 @@
+2025-12-16T13:18:11.585093+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-16T13:18:25.146500+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2025-12-16T13:18:54.590091+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-16T13:19:27.804157+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-16T13:19:41.698661+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2025-12-16T13:20:19.507348+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-16T13:20:19.525816+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-16T13:20:19.526370+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-16T13:22:00.028148+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-16T13:22:00.225988+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-16T13:22:00.226177+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-16T13:22:28.622158+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2025-12-16T13:22:29.523811+00:00 finalArenaServer systemd[1084]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-16T13:23:55.264507+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2025-12-16T13:23:55.327152+00:00 finalArenaServer apachectl[1566]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-16T13:23:55.410168+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1332 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.410275+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1333 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.410337+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1334 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.410383+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1335 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.410423+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1336 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.410462+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1410 (apache2) with signal SIGKILL.
+2025-12-16T13:23:55.418509+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2025-12-16T13:23:55.420008+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2025-12-16T13:23:55.420126+00:00 finalArenaServer systemd[1]: apache2.service: Consumed 2.744s CPU time.
+2025-12-16T13:23:55.431162+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2025-12-16T13:23:55.490537+00:00 finalArenaServer apachectl[1574]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-16T13:23:55.506049+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2025-12-16T13:25:01.855628+00:00 finalArenaServer CRON[1648]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-16T13:26:03.388536+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-16T13:26:23.176430+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-16T13:27:27.682579+00:00 finalArenaServer kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-16T13:29:09.719603+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-16T13:30:09.557032+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-16T13:30:09.663655+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-16T13:30:09.665867+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-16T13:31:29.559673+00:00 finalArenaServer systemd[1]: Starting fwupd-refresh.service - Refresh fwupd metadata and update motd...
+2025-12-16T13:31:29.670198+00:00 finalArenaServer dbus-daemon[625]: [system] Activating via systemd: service name='org.freedesktop.fwupd' unit='fwupd.service' requested by ':1.21' (uid=989 pid=1815 comm="/usr/bin/fwupdmgr refresh" label="unconfined")
+2025-12-16T13:31:29.681539+00:00 finalArenaServer systemd[1]: Starting fwupd.service - Firmware update daemon...
+2025-12-16T13:31:30.081749+00:00 finalArenaServer dbus-daemon[625]: [system] Activating via systemd: service name='org.freedesktop.UPower' unit='upower.service' requested by ':1.22' (uid=0 pid=1820 comm="/usr/libexec/fwupd/fwupd" label="unconfined")
+2025-12-16T13:31:30.091117+00:00 finalArenaServer systemd[1]: Starting upower.service - Daemon for power management...
+2025-12-16T13:31:30.284651+00:00 finalArenaServer dbus-daemon[625]: [system] Successfully activated service 'org.freedesktop.UPower'
+2025-12-16T13:31:30.284718+00:00 finalArenaServer systemd[1]: Started upower.service - Daemon for power management.
+2025-12-16T13:31:30.424343+00:00 finalArenaServer fwupd[1820]: 13:31:30.423 FuEngine             failed to add device /sys/devices/pci0000:00/0000:00:01.1/ata2/host1/target1:0:0/1:0:0:0/block/sr0: failed to open /dev/sr0: No medium found
+2025-12-16T13:31:30.476090+00:00 finalArenaServer fwupd[1820]: 13:31:30.475 FuMain               fwupd 1.9.30 ready for requests (locale en_US.UTF-8)
+2025-12-16T13:31:30.477446+00:00 finalArenaServer dbus-daemon[625]: [system] Successfully activated service 'org.freedesktop.fwupd'
+2025-12-16T13:31:30.478043+00:00 finalArenaServer systemd[1]: Started fwupd.service - Firmware update daemon.
+2025-12-16T13:31:30.496166+00:00 finalArenaServer fwupdmgr[1815]: Updating lvfs
+2025-12-16T13:31:34.172452+00:00 finalArenaServer fwupdmgr[1815]: Successfully downloaded new metadata: 0 local devices supported
+2025-12-16T13:31:34.176573+00:00 finalArenaServer systemd[1]: fwupd-refresh.service: Deactivated successfully.
+2025-12-16T13:31:34.176651+00:00 finalArenaServer systemd[1]: Finished fwupd-refresh.service - Refresh fwupd metadata and update motd.
+2025-12-16T13:32:19.638476+00:00 finalArenaServer systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2025-12-16T13:32:19.908687+00:00 finalArenaServer systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2025-12-16T13:32:19.909172+00:00 finalArenaServer systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.

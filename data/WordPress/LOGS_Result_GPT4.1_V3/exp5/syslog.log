@@ -1,0 +1,34 @@
+2026-03-09T20:55:01.380395+00:00 arena-wp CRON[1379]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-09T20:55:15.997011+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-03-09T20:57:59.600859+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-03-09T20:58:05.809545+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-03-09T20:58:05.999853+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-03-09T20:58:06.000072+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-03-09T20:59:05.778296+00:00 arena-wp systemd[1285]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-03-09T20:59:51.171001+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T20:59:51.375871+00:00 arena-wp apachectl[1434]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T20:59:51.416891+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-09T21:00:12.699714+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-03-09T21:00:12.710701+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-03-09T21:00:12.710859+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-03-09T21:01:10.997282+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T21:01:11.168852+00:00 arena-wp apachectl[1457]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T21:01:11.210575+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-09T21:01:36.056958+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-03-09T21:03:33.610431+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T21:03:33.770379+00:00 arena-wp apachectl[1489]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T21:03:33.811740+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-09T21:04:17.927426+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T21:04:18.055872+00:00 arena-wp apachectl[1504]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T21:04:18.083876+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-09T21:05:01.251859+00:00 arena-wp CRON[1518]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-09T21:07:59.497729+00:00 arena-wp systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2026-03-09T21:07:59.518577+00:00 arena-wp systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2026-03-09T21:07:59.518732+00:00 arena-wp systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
+2026-03-09T21:08:25.391831+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-09T21:08:25.551497+00:00 arena-wp apachectl[1550]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-09T21:08:25.592855+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-09T21:09:01.434851+00:00 arena-wp CRON[1564]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2026-03-09T21:09:05.793845+00:00 arena-wp systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2026-03-09T21:09:05.989178+00:00 arena-wp systemd[1]: phpsessionclean.service: Deactivated successfully.
+2026-03-09T21:09:05.989279+00:00 arena-wp systemd[1]: Finished phpsessionclean.service - Clean php session files.

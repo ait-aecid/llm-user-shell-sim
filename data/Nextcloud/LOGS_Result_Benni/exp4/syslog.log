@@ -1,0 +1,19 @@
+2025-12-17T11:40:35.429172+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T11:40:35.472900+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T11:40:35.474442+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T11:41:21.035129+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-17T11:41:21.243842+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-17T11:43:29.187235+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-17T11:43:52.576106+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T11:43:52.931645+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T11:43:52.931745+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T11:45:01.669069+00:00 finalArenaServer CRON[1734]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T11:45:13.948819+00:00 finalArenaServer systemd[1245]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-17T11:50:14.084913+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T11:50:14.120423+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T11:50:14.120599+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T11:53:53.000052+00:00 finalArenaServer systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2025-12-17T11:53:53.199619+00:00 finalArenaServer systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2025-12-17T11:53:53.200861+00:00 finalArenaServer systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
+2025-12-17T11:55:01.735602+00:00 finalArenaServer CRON[1991]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T11:57:19.544057+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND

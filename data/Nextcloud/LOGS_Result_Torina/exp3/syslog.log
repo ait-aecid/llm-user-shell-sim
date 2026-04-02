@@ -1,0 +1,14 @@
+2025-12-17T13:14:53.890618+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T13:14:54.696866+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T13:14:54.699191+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T13:15:01.276842+00:00 finalArenaServer CRON[1566]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T13:15:29.889002+00:00 finalArenaServer systemd[1195]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-17T13:17:01.298528+00:00 finalArenaServer CRON[1575]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+2025-12-17T13:20:29.899538+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T13:20:29.961695+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T13:20:29.961846+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T13:24:43.242753+00:00 finalArenaServer systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2025-12-17T13:24:43.484688+00:00 finalArenaServer systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2025-12-17T13:24:43.487984+00:00 finalArenaServer systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
+2025-12-17T13:25:01.343326+00:00 finalArenaServer CRON[1607]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T13:25:53.966181+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND

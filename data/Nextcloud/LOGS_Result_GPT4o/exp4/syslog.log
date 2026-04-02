@@ -1,0 +1,13 @@
+2026-01-26T09:54:07.419627+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-01-26T09:54:07.555840+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1345 (apache2) with signal SIGKILL.
+2026-01-26T09:54:07.556851+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1347 (apache2) with signal SIGKILL.
+2026-01-26T09:54:07.556905+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1399 (apache2) with signal SIGKILL.
+2026-01-26T09:54:07.570510+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2026-01-26T09:54:07.570998+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-01-26T09:54:07.571319+00:00 finalArenaServer systemd[1]: apache2.service: Consumed 11.904s CPU time, 218.9M memory peak, 0B memory swap peak.
+2026-01-26T09:54:07.579931+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-01-26T09:54:07.640899+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2026-01-26T09:54:28.356732+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-01-26T09:54:28.518293+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-01-26T09:54:28.518420+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-01-26T09:55:01.090475+00:00 finalArenaServer CRON[1545]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)

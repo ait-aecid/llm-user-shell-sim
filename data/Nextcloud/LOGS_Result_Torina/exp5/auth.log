@@ -1,0 +1,8 @@
+2025-12-17T13:42:04.529676+00:00 finalArenaServer systemd-logind[661]: Removed session 1.
+2025-12-17T13:42:16.672557+00:00 finalArenaServer sshd[1401]: Accepted publickey for vboxuser from 192.168.56.1 port 59466 ssh2: ED25519 SHA256:MUeSGbh+mLWWgYI18bZg/+FWY3dGqUkMtw+PYor4gA0
+2025-12-17T13:42:16.682964+00:00 finalArenaServer sshd[1401]: pam_unix(sshd:session): session opened for user vboxuser(uid=1000) by vboxuser(uid=0)
+2025-12-17T13:42:16.701449+00:00 finalArenaServer systemd-logind[661]: New session 4 of user vboxuser.
+2025-12-17T13:42:20.487043+00:00 finalArenaServer sudo: vboxuser : TTY=pts/2 ; PWD=/root ; USER=root ; COMMAND=/bin/bash
+2025-12-17T13:42:20.494073+00:00 finalArenaServer sudo: pam_unix(sudo-i:session): session opened for user root(uid=0) by vboxuser(uid=1000)
+2025-12-17T13:45:01.168088+00:00 finalArenaServer CRON[1498]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:45:01.189926+00:00 finalArenaServer CRON[1498]: pam_unix(cron:session): session closed for user root

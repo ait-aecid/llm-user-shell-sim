@@ -1,0 +1,19 @@
+2025-12-16T11:58:57.366896+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-16T11:59:50.659358+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-16T11:59:58.843943+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-16T12:00:01.879959+00:00 finalArenaServer CRON[1493]: (root) CMD (test -x /usr/bin/certbot -a \! -d /run/systemd/system && perl -e 'sleep int(rand(43200))' && certbot -q renew --no-random-sleep-on-renew)
+2025-12-16T12:00:08.010924+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-16T12:00:08.021630+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-16T12:00:08.021799+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-16T12:00:19.844898+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2025-12-16T12:01:16.665861+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2025-12-16T12:02:58.287685+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-16T12:02:58.530830+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-16T12:02:58.531008+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-16T12:03:57.965803+00:00 finalArenaServer systemd[1112]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-16T12:05:02.006981+00:00 finalArenaServer CRON[1627]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-16T12:06:00.206704+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-16T12:09:01.292244+00:00 finalArenaServer CRON[1726]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2025-12-16T12:09:19.573718+00:00 finalArenaServer systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2025-12-16T12:09:19.971024+00:00 finalArenaServer systemd[1]: phpsessionclean.service: Deactivated successfully.
+2025-12-16T12:09:19.971961+00:00 finalArenaServer systemd[1]: Finished phpsessionclean.service - Clean php session files.

@@ -1,0 +1,3 @@
+2026-03-05T16:37:28.916310+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-03-05T16:37:29.077592+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-03-05T16:37:29.077832+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.

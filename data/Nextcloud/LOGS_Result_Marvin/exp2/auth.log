@@ -1,0 +1,4 @@
+2025-12-16T12:55:01.839006+00:00 finalArenaServer CRON[1432]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T12:55:01.856559+00:00 finalArenaServer CRON[1432]: pam_unix(cron:session): session closed for user root
+2025-12-16T13:05:01.878968+00:00 finalArenaServer CRON[1833]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T13:05:01.901190+00:00 finalArenaServer CRON[1833]: pam_unix(cron:session): session closed for user root

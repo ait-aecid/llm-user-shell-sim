@@ -1,0 +1,36 @@
+2026-01-11T22:17:43.963688+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:17:46.128795+00:00 finalArenaServer systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2026-01-11T22:17:48.473194+00:00 finalArenaServer systemd-timesyncd[463]: Contacted time server 46.102.157.67:123 (2.ubuntu.pool.ntp.org).
+2026-01-11T22:17:48.473260+00:00 finalArenaServer systemd-timesyncd[463]: Initial clock synchronization to Sun 2026-01-11 22:17:48.472475 UTC.
+2026-01-11T22:17:48.474011+00:00 finalArenaServer systemd-resolved[452]: Clock change detected. Flushing caches.
+2026-01-11T22:17:49.515749+00:00 finalArenaServer systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-01-11T22:17:49.785566+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:17:53.192022+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:18:19.748978+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-11T22:18:38.022982+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:18:50.466698+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-11T22:18:50.913213+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:19:08.179667+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-11T22:19:12.814747+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2026-01-11T22:19:12.979394+00:00 finalArenaServer apachectl[1444]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2026-01-11T22:19:13.058378+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2026-01-11T22:19:13.059097+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2026-01-11T22:19:13.070579+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2026-01-11T22:19:13.288891+00:00 finalArenaServer apachectl[1450]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2026-01-11T22:19:13.307166+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2026-01-11T22:19:13.697009+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:20:00.180420+00:00 finalArenaServer kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:20:12.459589+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-11T22:20:12.499979+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-01-11T22:20:12.530607+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-01-11T22:20:12.530787+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-01-11T22:20:18.609744+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
+2026-01-11T22:20:53.411797+00:00 finalArenaServer kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:21:40.856160+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
+2026-01-11T22:22:14.165248+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-01-11T22:22:14.378272+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-01-11T22:22:14.379000+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-01-11T22:22:38.068591+00:00 finalArenaServer systemd[1134]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-01-11T22:23:49.599008+00:00 finalArenaServer systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-01-11T22:23:49.926722+00:00 finalArenaServer apachectl[1504]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2026-01-11T22:23:49.986551+00:00 finalArenaServer systemd[1]: Reloaded apache2.service - The Apache HTTP Server.

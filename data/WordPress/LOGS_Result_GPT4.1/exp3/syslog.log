@@ -1,0 +1,19 @@
+2026-02-27T18:49:48.965096+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 3991196439 wd_nsec: 3991196373
+2026-02-27T18:50:02.386348+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-02-27T18:50:14.151539+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-02-27T18:50:14.210780+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-02-27T18:50:14.212971+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-02-27T18:50:20.421482+00:00 arena-wp kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-27T18:50:35.122725+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-27T18:51:09.201664+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-27T18:51:30.406671+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-27T18:52:40.599814+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-27T18:53:36.625150+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-02-27T18:53:36.813657+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-02-27T18:53:36.813740+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-02-27T18:55:01.583619+00:00 arena-wp CRON[1448]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-02-27T18:55:03.188593+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-02-27T18:55:36.443792+00:00 arena-wp systemd[1303]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-02-27T19:00:13.536282+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-02-27T19:00:13.557715+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-02-27T19:00:13.558049+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.

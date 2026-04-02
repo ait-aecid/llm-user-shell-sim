@@ -1,0 +1,6 @@
+2025-12-17T14:21:38.216113+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/systemctl restart apache2.service
+2025-12-17T14:21:38.216872+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2025-12-17T14:21:38.526430+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
+2025-12-17T14:21:53.714849+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/systemctl
+2025-12-17T14:21:53.716705+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2025-12-17T14:21:57.916140+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root

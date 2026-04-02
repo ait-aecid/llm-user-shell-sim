@@ -1,0 +1,9 @@
+2026-01-12T01:41:22.647734+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-12T01:45:01.518480+00:00 finalArenaServer CRON[1468]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-01-12T01:45:29.569157+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-01-12T01:45:29.737970+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-01-12T01:45:29.738118+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-01-12T01:46:16.615699+00:00 finalArenaServer systemd[1168]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-01-12T01:47:55.829725+00:00 finalArenaServer systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-01-12T01:47:55.961296+00:00 finalArenaServer apachectl[1495]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2026-01-12T01:47:56.002598+00:00 finalArenaServer systemd[1]: Reloaded apache2.service - The Apache HTTP Server.

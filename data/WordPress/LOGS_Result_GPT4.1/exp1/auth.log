@@ -1,0 +1,10 @@
+2026-02-27T17:35:01.630757+00:00 arena-wp CRON[1491]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-27T17:35:01.649987+00:00 arena-wp CRON[1491]: pam_unix(cron:session): session closed for user root
+2026-02-27T17:36:10.764138+00:00 arena-wp sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/apache2/apache2.conf
+2026-02-27T17:36:10.777613+00:00 arena-wp sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-02-27T17:36:15.866866+00:00 arena-wp sudo: pam_unix(sudo:session): session closed for user root
+2026-02-27T17:39:01.697625+00:00 arena-wp CRON[1546]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-27T17:39:01.706595+00:00 arena-wp CRON[1546]: pam_unix(cron:session): session closed for user root
+2026-02-27T17:42:46.485549+00:00 arena-wp sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/wordpress/.htaccess
+2026-02-27T17:42:46.485774+00:00 arena-wp sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-02-27T17:42:51.671027+00:00 arena-wp sudo: pam_unix(sudo:session): session closed for user root

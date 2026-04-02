@@ -1,0 +1,14 @@
+2026-02-26T11:05:01.657449+00:00 arena-wp CRON[1865]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:05:01.682960+00:00 arena-wp CRON[1865]: pam_unix(cron:session): session closed for user root
+2026-02-26T11:08:35.782318+00:00 arena-wp sshd[1218]: Received disconnect from 192.168.199.1 port 57262:11: disconnected by user
+2026-02-26T11:08:35.848253+00:00 arena-wp sshd[1218]: Disconnected from user vboxuser 192.168.199.1 port 57262
+2026-02-26T11:08:35.854191+00:00 arena-wp systemd-logind[669]: Session 1 logged out. Waiting for processes to exit.
+2026-02-26T11:08:35.863998+00:00 arena-wp sshd[1121]: pam_unix(sshd:session): session closed for user vboxuser
+2026-02-26T11:08:35.874250+00:00 arena-wp sudo: pam_unix(sudo-i:session): session closed for user root
+2026-02-26T11:08:35.874614+00:00 arena-wp systemd-logind[669]: Removed session 1.
+2026-02-26T11:15:01.401664+00:00 arena-wp CRON[1671]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:15:01.435228+00:00 arena-wp CRON[1671]: pam_unix(cron:session): session closed for user root
+2026-02-26T11:17:01.456416+00:00 arena-wp CRON[1782]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:17:01.489920+00:00 arena-wp CRON[1782]: pam_unix(cron:session): session closed for user root
+2026-02-26T11:39:01.328124+00:00 arena-wp CRON[1536]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:39:01.353284+00:00 arena-wp CRON[1536]: pam_unix(cron:session): session closed for user root

@@ -1,0 +1,53 @@
+2026-01-11T23:38:04.970117+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-11T23:38:23.528093+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-11T23:38:27.945722+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-01-11T23:38:35.858720+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 31 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.868742+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 32 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.882135+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 33 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.882799+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 34 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.884504+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 35 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.884541+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 36 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.888825+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 37 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.889811+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 38 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.996590+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 39 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.997129+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 40 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:35.999515+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 41 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.000014+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:35 42 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.021783+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 43 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.022722+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 44 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.068953+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 45 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.070376+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 46 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.130849+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 47 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.131702+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 48 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.133738+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 49 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.136971+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 50 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.137689+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 51 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.138385+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 52 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.138959+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 53 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.139626+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 54 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.140860+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 55 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.141647+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 56 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.142444+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 57 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.142956+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 58 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.144467+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 59 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.144818+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 60 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.146600+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 61 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:38:36.147734+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:38:36 62 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:39:01.227498+00:00 finalArenaServer CRON[1445]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2026-01-11T23:39:10.880704+00:00 finalArenaServer kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 3067250073 wd_nsec: 3067248712
+2026-01-11T23:39:11.005180+00:00 finalArenaServer systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2026-01-11T23:39:11.696907+00:00 finalArenaServer systemd[1]: phpsessionclean.service: Deactivated successfully.
+2026-01-11T23:39:11.697196+00:00 finalArenaServer systemd[1]: Finished phpsessionclean.service - Clean php session files.
+2026-01-11T23:39:24.351974+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
+2026-01-11T23:39:32.680758+00:00 finalArenaServer kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T23:39:33.122184+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
+2026-01-11T23:40:18.384154+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-01-11T23:40:18.634877+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-01-11T23:40:18.636068+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-01-11T23:40:44.569840+00:00 finalArenaServer kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T23:41:03.432582+00:00 finalArenaServer mariadbd[990]: 2026-01-11 23:41:03 63 [Warning] Access denied for user 'nc_user'@'localhost'
+2026-01-11T23:41:28.504007+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 128 times, consider switching to WQ_UNBOUND
+2026-01-11T23:41:33.094048+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 128 times, consider switching to WQ_UNBOUND
+2026-01-11T23:42:16.712350+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-01-11T23:42:17.051809+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-01-11T23:42:17.052644+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.

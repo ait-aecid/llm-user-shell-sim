@@ -1,0 +1,33 @@
+2025-12-17T15:47:15.453792+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2025-12-17T15:48:37.689821+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T15:48:38.455186+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T15:48:38.483501+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T15:49:57.663719+00:00 finalArenaServer systemd[1190]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-17T15:50:17.674062+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T15:50:17.704761+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T15:50:17.704899+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T15:50:59.935278+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2025-12-17T15:52:35.221250+00:00 finalArenaServer systemd[1]: Starting motd-news.service - Message of the Day...
+2025-12-17T15:53:08.672178+00:00 finalArenaServer 50-motd-news[1928]:  * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+2025-12-17T15:53:08.672658+00:00 finalArenaServer 50-motd-news[1928]:    just raised the bar for easy, resilient and secure K8s cluster deployment.
+2025-12-17T15:53:08.672726+00:00 finalArenaServer 50-motd-news[1928]:    https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+2025-12-17T15:53:08.715379+00:00 finalArenaServer systemd[1]: motd-news.service: Deactivated successfully.
+2025-12-17T15:53:08.715550+00:00 finalArenaServer systemd[1]: Finished motd-news.service - Message of the Day.
+2025-12-17T15:53:08.715640+00:00 finalArenaServer systemd[1]: motd-news.service: Consumed 1.219s CPU time.
+2025-12-17T15:53:57.684455+00:00 finalArenaServer systemd[1]: Starting fwupd-refresh.service - Refresh fwupd metadata and update motd...
+2025-12-17T15:53:57.852969+00:00 finalArenaServer dbus-daemon[628]: [system] Activating via systemd: service name='org.freedesktop.fwupd' unit='fwupd.service' requested by ':1.30' (uid=989 pid=1962 comm="/usr/bin/fwupdmgr refresh" label="unconfined")
+2025-12-17T15:53:57.876787+00:00 finalArenaServer systemd[1]: Starting fwupd.service - Firmware update daemon...
+2025-12-17T15:53:58.544214+00:00 finalArenaServer dbus-daemon[628]: [system] Activating via systemd: service name='org.freedesktop.UPower' unit='upower.service' requested by ':1.31' (uid=0 pid=1967 comm="/usr/libexec/fwupd/fwupd" label="unconfined")
+2025-12-17T15:53:58.558818+00:00 finalArenaServer systemd[1]: Starting upower.service - Daemon for power management...
+2025-12-17T15:53:58.962969+00:00 finalArenaServer dbus-daemon[628]: [system] Successfully activated service 'org.freedesktop.UPower'
+2025-12-17T15:53:58.963293+00:00 finalArenaServer systemd[1]: Started upower.service - Daemon for power management.
+2025-12-17T15:53:59.137067+00:00 finalArenaServer fwupd[1967]: 15:53:59.133 FuEngine             failed to add device /sys/devices/pci0000:00/0000:00:01.1/ata2/host1/target1:0:0/1:0:0:0/block/sr0: failed to open /dev/sr0: No medium found
+2025-12-17T15:53:59.235155+00:00 finalArenaServer fwupd[1967]: 15:53:59.233 FuMain               fwupd 1.9.30 ready for requests (locale en_US.UTF-8)
+2025-12-17T15:53:59.240485+00:00 finalArenaServer dbus-daemon[628]: [system] Successfully activated service 'org.freedesktop.fwupd'
+2025-12-17T15:53:59.241893+00:00 finalArenaServer systemd[1]: Started fwupd.service - Firmware update daemon.
+2025-12-17T15:53:59.283078+00:00 finalArenaServer fwupdmgr[1962]: Updating lvfs
+2025-12-17T15:54:05.687972+00:00 finalArenaServer fwupdmgr[1962]: Successfully downloaded new metadata: 0 local devices supported
+2025-12-17T15:54:05.697435+00:00 finalArenaServer systemd[1]: fwupd-refresh.service: Deactivated successfully.
+2025-12-17T15:54:05.697606+00:00 finalArenaServer systemd[1]: Finished fwupd-refresh.service - Refresh fwupd metadata and update motd.
+2025-12-17T15:55:01.073320+00:00 finalArenaServer CRON[2040]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T15:56:40.387590+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND

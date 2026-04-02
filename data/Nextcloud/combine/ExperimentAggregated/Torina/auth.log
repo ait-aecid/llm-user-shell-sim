@@ -1,0 +1,27 @@
+2025-12-17T12:45:01.495364+00:00 finalArenaServer CRON[1697]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T12:45:01.534473+00:00 finalArenaServer CRON[1697]: pam_unix(cron:session): session closed for user root2025-12-17T12:55:02.939940+00:00 finalArenaServer CRON[1504]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T12:55:02.958123+00:00 finalArenaServer CRON[1504]: pam_unix(cron:session): session closed for user root
+2025-12-17T13:05:01.091473+00:00 finalArenaServer CRON[1562]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:05:01.106932+00:00 finalArenaServer CRON[1562]: pam_unix(cron:session): session closed for user root2025-12-17T13:15:01.276490+00:00 finalArenaServer CRON[1565]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:15:01.289428+00:00 finalArenaServer CRON[1565]: pam_unix(cron:session): session closed for user root
+2025-12-17T13:17:01.297898+00:00 finalArenaServer CRON[1574]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:17:01.321762+00:00 finalArenaServer CRON[1574]: pam_unix(cron:session): session closed for user root
+2025-12-17T13:25:01.342491+00:00 finalArenaServer CRON[1606]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:25:01.357624+00:00 finalArenaServer CRON[1606]: pam_unix(cron:session): session closed for user root2025-12-17T13:35:01.992268+00:00 finalArenaServer CRON[1514]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:35:02.019595+00:00 finalArenaServer CRON[1514]: pam_unix(cron:session): session closed for user root
+2025-12-17T13:39:01.049350+00:00 finalArenaServer CRON[1547]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:39:01.074818+00:00 finalArenaServer CRON[1547]: pam_unix(cron:session): session closed for user root2025-12-17T13:42:04.529676+00:00 finalArenaServer systemd-logind[661]: Removed session 1.
+2025-12-17T13:42:16.672557+00:00 finalArenaServer sshd[1401]: Accepted publickey for vboxuser from 192.168.56.1 port 59466 ssh2: ED25519 SHA256:MUeSGbh+mLWWgYI18bZg/+FWY3dGqUkMtw+PYor4gA0
+2025-12-17T13:42:16.682964+00:00 finalArenaServer sshd[1401]: pam_unix(sshd:session): session opened for user vboxuser(uid=1000) by vboxuser(uid=0)
+2025-12-17T13:42:16.701449+00:00 finalArenaServer systemd-logind[661]: New session 4 of user vboxuser.
+2025-12-17T13:42:20.487043+00:00 finalArenaServer sudo: vboxuser : TTY=pts/2 ; PWD=/root ; USER=root ; COMMAND=/bin/bash
+2025-12-17T13:42:20.494073+00:00 finalArenaServer sudo: pam_unix(sudo-i:session): session opened for user root(uid=0) by vboxuser(uid=1000)
+2025-12-17T13:45:01.168088+00:00 finalArenaServer CRON[1498]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:45:01.189926+00:00 finalArenaServer CRON[1498]: pam_unix(cron:session): session closed for user root2025-12-17T13:55:01.258540+00:00 finalArenaServer CRON[1549]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:55:01.274104+00:00 finalArenaServer CRON[1549]: pam_unix(cron:session): session closed for user root
+2025-12-17T14:01:34.012278+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/systemctl status apache2
+2025-12-17T14:01:34.020425+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2025-12-17T14:01:37.379221+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root2025-12-17T14:05:01.254112+00:00 finalArenaServer CRON[1523]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T14:05:01.281266+00:00 finalArenaServer CRON[1523]: pam_unix(cron:session): session closed for user root
+2025-12-17T14:09:01.295152+00:00 finalArenaServer CRON[1533]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T14:09:01.304050+00:00 finalArenaServer CRON[1533]: pam_unix(cron:session): session closed for user root

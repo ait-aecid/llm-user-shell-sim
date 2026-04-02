@@ -1,0 +1,14 @@
+2026-02-24T11:09:01.224676+00:00 arena-wp CRON[1634]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
+2026-02-24T11:09:06.508837+00:00 arena-wp systemd[1]: Starting phpsessionclean.service - Clean php session files...
+2026-02-24T11:09:07.615830+00:00 arena-wp systemd[1]: phpsessionclean.service: Deactivated successfully.
+2026-02-24T11:09:07.619486+00:00 arena-wp systemd[1]: Finished phpsessionclean.service - Clean php session files.
+2026-02-24T11:09:07.623250+00:00 arena-wp systemd[1]: phpsessionclean.service: Consumed 1.033s CPU time.
+2026-02-24T11:10:13.986118+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-02-24T11:10:14.080146+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-02-24T11:10:14.081131+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-02-24T11:12:18.153077+00:00 arena-wp kernel: workqueue: blk_mq_requeue_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-02-24T11:14:18.845974+00:00 arena-wp systemd[1]: Starting apt-daily-upgrade.service - Daily apt upgrade and clean activities...
+2026-02-24T11:14:19.594404+00:00 arena-wp systemd[1]: apt-daily-upgrade.service: Deactivated successfully.
+2026-02-24T11:14:19.596344+00:00 arena-wp systemd[1]: Finished apt-daily-upgrade.service - Daily apt upgrade and clean activities.
+2026-02-24T11:15:01.295450+00:00 arena-wp CRON[1865]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-02-24T11:17:01.357287+00:00 arena-wp CRON[1876]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)

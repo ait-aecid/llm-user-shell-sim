@@ -1,0 +1,15 @@
+2026-02-27T19:28:20.352283+00:00 arena-wp systemd[1]: Starting e2scrub_all.service - Online ext4 Metadata Check for All Filesystems...
+2026-02-27T19:28:20.372832+00:00 arena-wp systemd[1]: e2scrub_all.service: Deactivated successfully.
+2026-02-27T19:28:20.373002+00:00 arena-wp systemd[1]: Finished e2scrub_all.service - Online ext4 Metadata Check for All Filesystems.
+2026-02-27T19:30:03.723797+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-02-27T19:30:03.761473+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-02-27T19:30:03.761542+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-02-27T19:30:39.695974+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-02-27T19:31:17.366213+00:00 arena-wp kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-02-27T19:32:31.381983+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-02-27T19:32:31.661367+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-02-27T19:32:31.661594+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-02-27T19:33:36.429188+00:00 arena-wp systemd[1317]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-02-27T19:35:05.741035+00:00 arena-wp CRON[1471]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-02-27T19:35:58.891201+00:00 arena-wp mariadbd[959]: 2026-02-27 19:35:58 37 [Warning] Access denied for user 'wordpress'@'localhost'
+2026-02-27T19:36:19.044086+00:00 arena-wp mariadbd[959]: 2026-02-27 19:36:19 38 [Warning] Access denied for user 'wordpress'@'localhost'

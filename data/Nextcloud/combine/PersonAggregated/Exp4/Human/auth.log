@@ -1,0 +1,39 @@
+2025-12-17T16:04:26.355473+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/var/www/nextcloud ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ
+2025-12-17T16:04:26.357804+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2025-12-17T16:04:27.907170+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2025-12-17T16:05:00.123628+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/var/www/nextcloud ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ check
+2025-12-17T16:05:00.127479+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2025-12-17T16:05:00.611666+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2025-12-17T16:05:01.468939+00:00 finalArenaServer CRON[1559]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T16:05:01.488193+00:00 finalArenaServer CRON[1559]: pam_unix(cron:session): session closed for user root
+2025-12-17T16:06:42.736910+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/var/www/nextcloud ; USER=www-data ; COMMAND=/usr/bin/php /var/www/nextcloud/occ app:list
+2025-12-17T16:06:42.742666+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2025-12-17T16:06:43.484463+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data
+2025-12-17T16:09:01.505812+00:00 finalArenaServer CRON[1567]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T16:09:01.522555+00:00 finalArenaServer CRON[1567]: pam_unix(cron:session): session closed for user root2025-12-17T11:45:01.668546+00:00 finalArenaServer CRON[1733]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T11:45:01.715288+00:00 finalArenaServer CRON[1733]: pam_unix(cron:session): session closed for user root
+2025-12-17T11:55:01.729626+00:00 finalArenaServer CRON[1990]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T11:55:01.751184+00:00 finalArenaServer CRON[1990]: pam_unix(cron:session): session closed for user root
+2025-12-17T11:56:27.391503+00:00 finalArenaServer su[2137]: (to www-data) root on pts/5
+2025-12-17T11:56:27.416876+00:00 finalArenaServer su[2137]: pam_unix(su-l:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2025-12-17T11:56:27.451754+00:00 finalArenaServer nologin: Attempted login by vboxuser (UID: 33) on /dev/pts/5
+2025-12-17T11:56:27.452029+00:00 finalArenaServer su[2137]: pam_unix(su-l:session): session closed for user www-data
+2025-12-17T11:56:34.092662+00:00 finalArenaServer su[2139]: (to www-data) root on pts/5
+2025-12-17T11:56:34.096118+00:00 finalArenaServer su[2139]: pam_unix(su-l:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
+2025-12-17T11:57:15.203504+00:00 finalArenaServer polkitd[632]: Registered Authentication Agent for unix-process:2207:111638 (system bus name :1.26 [/usr/bin/pkttyagent --notify-fd 5 --fallback], object path /org/freedesktop/PolicyKit1/AuthenticationAgent, locale en_US.UTF-8)
+2025-12-17T11:57:15.343836+00:00 finalArenaServer polkitd[632]: Identity `unix-group:admin' is not valid, ignoring: No UNIX group with name admin: Success
+2025-12-17T11:57:33.199422+00:00 finalArenaServer polkitd[632]: Unregistered Authentication Agent for unix-process:unknown (system bus name :1.26, object path /org/freedesktop/PolicyKit1/AuthenticationAgent, locale en_US.UTF-8) (disconnected from bus)
+2025-12-17T11:57:33.203582+00:00 finalArenaServer polkitd[632]: Operator of unix-process:unknown FAILED to authenticate to gain authorization for action org.freedesktop.systemd1.manage-units for system-bus-name::1.27 [<unknown>] (owned by unix-user:www-data)
+2025-12-17T11:57:34.287091+00:00 finalArenaServer su[2139]: pam_unix(su-l:session): session closed for user www-data2025-12-16T12:00:01.874771+00:00 finalArenaServer CRON[1492]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T12:00:01.930484+00:00 finalArenaServer CRON[1492]: pam_unix(cron:session): session closed for user root
+2025-12-16T12:05:02.002871+00:00 finalArenaServer CRON[1626]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T12:05:02.061676+00:00 finalArenaServer CRON[1626]: pam_unix(cron:session): session closed for user root
+2025-12-16T12:09:01.272804+00:00 finalArenaServer CRON[1725]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T12:09:01.292636+00:00 finalArenaServer CRON[1725]: pam_unix(cron:session): session closed for user root2025-12-16T13:25:01.853822+00:00 finalArenaServer CRON[1647]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-16T13:25:01.868632+00:00 finalArenaServer CRON[1647]: pam_unix(cron:session): session closed for user root2025-12-17T14:39:02.391431+00:00 finalArenaServer CRON[1630]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T14:39:02.403293+00:00 finalArenaServer CRON[1630]: pam_unix(cron:session): session closed for user root
+2025-12-17T14:45:01.695105+00:00 finalArenaServer CRON[1849]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T14:45:01.706493+00:00 finalArenaServer CRON[1849]: pam_unix(cron:session): session closed for user root2025-12-17T13:35:01.992268+00:00 finalArenaServer CRON[1514]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:35:02.019595+00:00 finalArenaServer CRON[1514]: pam_unix(cron:session): session closed for user root
+2025-12-17T13:39:01.049350+00:00 finalArenaServer CRON[1547]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2025-12-17T13:39:01.074818+00:00 finalArenaServer CRON[1547]: pam_unix(cron:session): session closed for user root

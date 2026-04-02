@@ -1,0 +1,34 @@
+2025-12-17T12:21:01.943670+00:00 finalArenaServer kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 6434541185 wd_nsec: 6434540686
+2025-12-17T12:22:23.133989+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2025-12-17T12:23:25.449254+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2025-12-17T12:23:25.531411+00:00 finalArenaServer apachectl[1712]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:23:25.608897+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1437 (apache2) with signal SIGKILL.
+2025-12-17T12:23:25.609699+00:00 finalArenaServer systemd[1]: apache2.service: Killing process 1440 (apache2) with signal SIGKILL.
+2025-12-17T12:23:25.614088+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2025-12-17T12:23:25.615023+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2025-12-17T12:23:25.615095+00:00 finalArenaServer systemd[1]: apache2.service: Consumed 3.625s CPU time, 127.3M memory peak, 0B memory swap peak.
+2025-12-17T12:23:25.630251+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2025-12-17T12:23:25.729928+00:00 finalArenaServer apachectl[1718]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:23:25.753167+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2025-12-17T12:24:48.516994+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2025-12-17T12:24:48.804015+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2025-12-17T12:24:48.804203+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2025-12-17T12:25:01.110115+00:00 finalArenaServer CRON[1780]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2025-12-17T12:25:18.515981+00:00 finalArenaServer systemd[1189]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2025-12-17T12:25:25.837971+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2025-12-17T12:25:25.901508+00:00 finalArenaServer apachectl[1801]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:25:25.976163+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2025-12-17T12:25:25.976238+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2025-12-17T12:25:25.990318+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2025-12-17T12:25:26.074679+00:00 finalArenaServer apachectl[1808]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:25:26.089274+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.
+2025-12-17T12:30:18.975532+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2025-12-17T12:30:19.005183+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2025-12-17T12:30:19.005333+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2025-12-17T12:30:52.763470+00:00 finalArenaServer systemd[1]: Stopping apache2.service - The Apache HTTP Server...
+2025-12-17T12:30:52.858215+00:00 finalArenaServer apachectl[2310]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:30:52.966926+00:00 finalArenaServer systemd[1]: apache2.service: Deactivated successfully.
+2025-12-17T12:30:52.968587+00:00 finalArenaServer systemd[1]: Stopped apache2.service - The Apache HTTP Server.
+2025-12-17T12:30:52.988849+00:00 finalArenaServer systemd[1]: Starting apache2.service - The Apache HTTP Server...
+2025-12-17T12:30:53.103091+00:00 finalArenaServer apachectl[2318]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2025-12-17T12:30:53.141941+00:00 finalArenaServer systemd[1]: Started apache2.service - The Apache HTTP Server.

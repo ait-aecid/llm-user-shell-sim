@@ -1,0 +1,21 @@
+2026-01-12T00:15:58.670670+00:00 finalArenaServer systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2026-01-12T00:16:00.701083+00:00 finalArenaServer systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-01-12T00:16:03.004670+00:00 finalArenaServer systemd-timesyncd[430]: Contacted time server 37.252.189.117:123 (2.ubuntu.pool.ntp.org).
+2026-01-12T00:16:03.005177+00:00 finalArenaServer systemd-timesyncd[430]: Initial clock synchronization to Mon 2026-01-12 00:16:03.003722 UTC.
+2026-01-12T00:16:03.006404+00:00 finalArenaServer systemd-resolved[429]: Clock change detected. Flushing caches.
+2026-01-12T00:16:28.583857+00:00 finalArenaServer systemd[1]: Starting e2scrub_all.service - Online ext4 Metadata Check for All Filesystems...
+2026-01-12T00:16:28.602565+00:00 finalArenaServer systemd[1]: e2scrub_all.service: Deactivated successfully.
+2026-01-12T00:16:28.602632+00:00 finalArenaServer systemd[1]: Finished e2scrub_all.service - Online ext4 Metadata Check for All Filesystems.
+2026-01-12T00:17:03.012317+00:00 finalArenaServer CRON[1433]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+2026-01-12T00:19:21.443579+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-12T00:20:01.139153+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-01-12T00:20:01.162055+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-01-12T00:20:01.162285+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-01-12T00:20:55.227860+00:00 finalArenaServer systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-01-12T00:20:55.386024+00:00 finalArenaServer systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-01-12T00:20:55.386231+00:00 finalArenaServer systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-01-12T00:21:15.214076+00:00 finalArenaServer systemd[1164]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-01-12T00:24:14.068339+00:00 finalArenaServer systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-01-12T00:24:14.199604+00:00 finalArenaServer apachectl[1478]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fe3f:3739. Set the 'ServerName' directive globally to suppress this message
+2026-01-12T00:24:14.236264+00:00 finalArenaServer systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-01-12T00:25:01.044755+00:00 finalArenaServer CRON[1491]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)

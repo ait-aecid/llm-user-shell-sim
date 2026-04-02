@@ -1,0 +1,24 @@
+2026-03-05T11:40:43.734243+00:00 arena-wp mariadbd[964]: 2026-03-05 11:40:43 31 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:40:45.351587+00:00 arena-wp mariadbd[964]: 2026-03-05 11:40:45 32 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:42:12.833211+00:00 arena-wp mariadbd[964]: 2026-03-05 11:42:12 33 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:42:13.398733+00:00 arena-wp mariadbd[964]: 2026-03-05 11:42:13 34 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:42:14.301251+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-03-05T11:42:15.075133+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-03-05T11:42:21.831890+00:00 arena-wp mariadbd[964]: 2026-03-05 11:42:21 35 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:43:08.580598+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-03-05T11:43:42.920980+00:00 arena-wp mariadbd[964]: 2026-03-05 11:43:42 37 [Warning] Access denied for user 'wp_admin'@'localhost' (using password: YES)
+2026-03-05T11:43:59.651967+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-03-05T11:44:16.623316+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-03-05T11:44:22.132370+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-03-05T11:44:30.572604+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
+2026-03-05T11:44:48.475281+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-03-05T11:44:49.484828+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-03-05T11:44:49.485313+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-03-05T11:45:01.177191+00:00 arena-wp kernel: hrtimer: interrupt took 8085607 ns
+2026-03-05T11:45:01.976184+00:00 arena-wp CRON[1580]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-05T11:45:54.053233+00:00 arena-wp systemd[1085]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-03-05T11:46:05.872868+00:00 arena-wp mariadbd[964]: 2026-03-05 11:46:05 38 [Warning] Access denied for user 'wp_user'@'localhost' (using password: YES)
+2026-03-05T11:46:07.141638+00:00 arena-wp mariadbd[964]: 2026-03-05 11:46:07 39 [Warning] Access denied for user 'wp_user'@'localhost' (using password: YES)
+2026-03-05T11:46:09.077153+00:00 arena-wp mariadbd[964]: 2026-03-05 11:46:09 40 [Warning] Access denied for user 'wp_user'@'localhost' (using password: YES)
+2026-03-05T11:46:18.365014+00:00 arena-wp mariadbd[964]: 2026-03-05 11:46:18 41 [Warning] Access denied for user 'wp_user'@'localhost' (using password: YES)
+2026-03-05T11:48:51.736839+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND

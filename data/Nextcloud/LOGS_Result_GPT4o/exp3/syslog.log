@@ -1,0 +1,14 @@
+2026-01-11T22:47:57.283707+00:00 finalArenaServer systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2026-01-11T22:48:00.089573+00:00 finalArenaServer systemd-timesyncd[442]: Contacted time server 90.146.77.249:123 (2.ubuntu.pool.ntp.org).
+2026-01-11T22:48:00.093013+00:00 finalArenaServer systemd-resolved[439]: Clock change detected. Flushing caches.
+2026-01-11T22:48:00.093193+00:00 finalArenaServer systemd-timesyncd[442]: Initial clock synchronization to Sun 2026-01-11 22:48:00.087692 UTC.
+2026-01-11T22:48:00.106573+00:00 finalArenaServer systemd[1]: Starting e2scrub_all.service - Online ext4 Metadata Check for All Filesystems...
+2026-01-11T22:48:00.118706+00:00 finalArenaServer systemd[1]: e2scrub_all.service: Deactivated successfully.
+2026-01-11T22:48:00.119132+00:00 finalArenaServer systemd[1]: Finished e2scrub_all.service - Online ext4 Metadata Check for All Filesystems.
+2026-01-11T22:48:01.265392+00:00 finalArenaServer systemd[1]: systemd-timedated.service: Deactivated successfully.
+2026-01-11T22:48:04.675005+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:48:10.819502+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:48:27.418328+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-01-11T22:48:30.333477+00:00 finalArenaServer kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
+2026-01-11T22:48:37.575546+00:00 finalArenaServer kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND
+2026-01-11T22:48:51.598336+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 16 times, consider switching to WQ_UNBOUND

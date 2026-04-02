@@ -1,0 +1,5 @@
+2026-01-11T22:15:01.471651+00:00 finalArenaServer CRON[1519]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-01-11T22:15:01.483052+00:00 finalArenaServer CRON[1519]: pam_unix(cron:session): session closed for user root
+2026-01-11T22:15:27.205334+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /etc/php/8.3/apache2/conf.d/99-memory-limit.ini
+2026-01-11T22:15:27.206895+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
+2026-01-11T22:15:32.678785+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root

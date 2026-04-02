@@ -1,0 +1,15 @@
+2026-02-26T11:15:01.401664+00:00 arena-wp CRON[1671]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:15:01.435228+00:00 arena-wp CRON[1671]: pam_unix(cron:session): session closed for user root
+2026-02-26T11:17:01.456416+00:00 arena-wp CRON[1782]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T11:17:01.489920+00:00 arena-wp CRON[1782]: pam_unix(cron:session): session closed for user root
+2026-02-24T11:21:30.335131+00:00 arena-wp sshd[1381]: Accepted publickey for vboxuser from 192.168.199.1 port 57190 ssh2: ED25519 SHA256:MUeSGbh+mLWWgYI18bZg/+FWY3dGqUkMtw+PYor4gA0
+2026-02-24T11:21:30.349193+00:00 arena-wp sshd[1381]: pam_unix(sshd:session): session opened for user vboxuser(uid=1000) by vboxuser(uid=0)
+2026-02-24T11:21:30.379841+00:00 arena-wp systemd-logind[673]: New session 4 of user vboxuser.
+2026-02-24T11:21:37.722887+00:00 arena-wp sudo: vboxuser : TTY=pts/2 ; PWD=/root ; USER=root ; COMMAND=/bin/bash
+2026-02-24T11:21:37.733821+00:00 arena-wp sudo: pam_unix(sudo-i:session): session opened for user root(uid=0) by vboxuser(uid=1000)
+2026-02-24T11:25:01.404667+00:00 arena-wp CRON[1533]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-24T11:25:01.424478+00:00 arena-wp CRON[1533]: pam_unix(cron:session): session closed for user root
+2026-03-05T11:45:01.968919+00:00 arena-wp CRON[1579]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-03-05T11:45:02.021360+00:00 arena-wp CRON[1579]: pam_unix(cron:session): session closed for user root
+2026-02-26T13:55:01.450696+00:00 arena-wp CRON[1611]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
+2026-02-26T13:55:01.479630+00:00 arena-wp CRON[1611]: pam_unix(cron:session): session closed for user root

@@ -1,0 +1,15 @@
+2026-03-05T16:44:48.033835+00:00 arena-wp systemd[1]: Starting update-notifier-download.service - Download data for packages that failed at package install time...
+2026-03-05T16:44:48.270144+00:00 arena-wp systemd[1]: update-notifier-download.service: Deactivated successfully.
+2026-03-05T16:44:48.270351+00:00 arena-wp systemd[1]: Finished update-notifier-download.service - Download data for packages that failed at package install time.
+2026-03-05T16:45:01.575154+00:00 arena-wp CRON[1420]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-03-05T16:46:00.455773+00:00 arena-wp systemd[1]: Reloading apache2.service - The Apache HTTP Server...
+2026-03-05T16:46:00.560999+00:00 arena-wp apachectl[1434]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using fd17:625c:f037:2:a00:27ff:fed8:540d. Set the 'ServerName' directive globally to suppress this message
+2026-03-05T16:46:00.600001+00:00 arena-wp systemd[1]: Reloaded apache2.service - The Apache HTTP Server.
+2026-03-05T16:46:22.785407+00:00 arena-wp systemd[1291]: launchpadlib-cache-clean.service - Clean up old files in the Launchpadlib cache was skipped because of an unmet condition check (ConditionPathExists=/home/vboxuser/.launchpadlib/api.launchpad.net/cache).
+2026-03-05T16:50:22.792769+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
+2026-03-05T16:50:22.813963+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
+2026-03-05T16:50:22.814094+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
+2026-03-05T16:54:46.959579+00:00 arena-wp systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
+2026-03-05T16:54:47.018166+00:00 arena-wp systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
+2026-03-05T16:54:47.018278+00:00 arena-wp systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
+2026-03-05T16:55:01.606695+00:00 arena-wp CRON[1497]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)

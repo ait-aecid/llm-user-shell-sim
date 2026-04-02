@@ -1,0 +1,6 @@
+2026-02-26T11:02:49.923336+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
+2026-02-26T11:05:01.659604+00:00 arena-wp CRON[1866]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
+2026-02-26T11:05:02.822825+00:00 arena-wp kernel: workqueue: blk_mq_requeue_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-02-26T11:05:56.098965+00:00 arena-wp kernel: workqueue: drain_vmap_area_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+2026-02-26T11:08:35.869944+00:00 arena-wp systemd[1]: session-1.scope: Deactivated successfully.
+2026-02-26T11:08:35.874399+00:00 arena-wp systemd[1]: session-1.scope: Consumed 15.243s CPU time.
