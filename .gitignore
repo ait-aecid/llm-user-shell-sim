@@ -6,10 +6,15 @@
 __pycache__/
 *.pyc
 
+# Agent-generated troubleshooting log captures
+agent/scenarios/**/LOGS/
+
 # Data folders (ignore everything inside)
 Data/
 Data_WP/
+data/
 results/
+logs/
 25_data_split_result/
 50_data_split_result/
 ZZZZ_playground/
