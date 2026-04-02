@@ -13,6 +13,11 @@ import numpy as np
 
 from src.core.ml.data import Example
 from src.core.ml.env import load_project_env
+from src.core.shared.actor_catalog import (
+    DatasetInput,
+    discover_actor_groups,
+    experiment_aggregated_dir,
+)
 
 from itertools import combinations
 
@@ -22,8 +27,6 @@ from itertools import combinations
 # -----------------------------
 PreprocessMode = Literal["raw", "soft", "aggressive", "template"]
 WindowMode = Literal["none", "lines", "cids", "inter_times"]  # NEW
-DatasetName = Literal["Nextcloud", "WordPress"]
-DatasetInput = Literal["Nextcloud", "WordPress", "Data", "Data_WP"]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 load_project_env()
@@ -83,26 +86,8 @@ class LoadConfig:
     randomize_actor_labels: bool = False
     assignment_idx: Optional[int] = None
 
-
-def normalize_dataset_name(dataset: DatasetInput | str) -> DatasetName:
-    aliases: dict[str, DatasetName] = {
-        "Nextcloud": "Nextcloud",
-        "WordPress": "WordPress",
-        "Data": "Nextcloud",
-        "Data_WP": "WordPress",
-    }
-    try:
-        return aliases[dataset]
-    except KeyError as exc:
-        valid = ", ".join(sorted(aliases))
-        raise ValueError(
-            f"Unknown dataset={dataset!r}. Expected one of: {valid}"
-        ) from exc
-
-
 def _default_data_root(dataset: DatasetInput | str) -> Path:
-    canonical_dataset = normalize_dataset_name(dataset)
-    return PROJECT_ROOT / "data" / canonical_dataset / "combine" / "ExperimentAggregated"
+    return experiment_aggregated_dir(dataset)
 
 def get_num_actor_label_assignments(dataset: DatasetInput | str) -> int:
     human_groups, ai_groups = _default_groups(dataset)
@@ -114,19 +99,7 @@ def get_num_actor_label_assignments(dataset: DatasetInput | str) -> int:
 
 
 def _default_groups(dataset: DatasetInput | str) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
-    canonical_dataset = normalize_dataset_name(dataset)
-
-    if canonical_dataset == "Nextcloud":
-        return (
-            ("Armin", "Benni", "Hotti", "Marvin", "Nico", "Torina"),
-            ("GPT4.1", "GPT4.1_V2", "GPT4o", "GPT5"),
-        )
-    if canonical_dataset == "WordPress":
-        return (
-            ("Armin", "Hotti", "Marvin", "Nico"),
-            ("GPT4.1", "GPT4.1_V2", "GPT4.1_V3", "GPT5"),
-        )
-    raise ValueError(f"Unknown dataset={dataset!r}")
+    return discover_actor_groups(dataset)
 
 
 def _resolve_data_root(cfg: LoadConfig) -> Path:

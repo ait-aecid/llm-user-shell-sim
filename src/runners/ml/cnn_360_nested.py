@@ -280,7 +280,7 @@ def main():
                     cand_grid,
                     metric=metric,
                     evaluate_test_for_all=False,
-                    verbose=True,  # changed here!
+                    verbose=False,
                 )
 
             val_metric = _safe_float(getattr(best_val_res, metric, np.nan))

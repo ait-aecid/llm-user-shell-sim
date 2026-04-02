@@ -1,22 +1,125 @@
+from __future__ import annotations
+
+import argparse
+
 from src.stats_tools import one_gram
 from src.core.stats.common_runner import evaluate_single_run
 
 
-def run_one_gram(mode: str = "single") -> None:
-    use_wordpress = True
-    dataset = "WordPress" if use_wordpress else "Nextcloud"
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run one_gram in single or sweep mode."
+    )
 
-    assignment_mode = "true"
-    assignment_idx = None
+    parser.add_argument(
+        "--mode",
+        choices=["single", "sweep"],
+        required=True,
+        help="Whether to run a single configuration or a sweep.",
+    )
+    parser.add_argument(
+        "--dataset",
+        choices=["Nextcloud", "WordPress"],
+        required=True,
+        help="Dataset to use.",
+    )
+    parser.add_argument(
+        "--assignment_mode",
+        choices=["true", "random_stratified", "indexed_stratified"],
+        required=True,
+        help="Assignment mode for group labels.",
+    )
+    parser.add_argument(
+        "--assignment_idx",
+        type=int,
+        default=None,
+        help="Assignment index, required when assignment_mode=indexed_stratified.",
+    )
+    parser.add_argument(
+        "--out_csv",
+        type=str,
+        default=None,
+        help=(
+            "Optional output CSV path. "
+            "If omitted, a dataset-specific default path is used."
+        ),
+    )
 
-    output_path = f"results/statistic_one_gram{'_wordpress' if use_wordpress else '_nextcloud'}.csv"
+    # single mode arguments
+    parser.add_argument(
+        "--log_type",
+        choices=["syslog", "nextcloud", "audit"],
+        help="Log type for single mode.",
+    )
+    parser.add_argument(
+        "--ngram_mode",
+        choices=["char", "word"],
+        help="One-gram mode for single mode.",
+    )
+    parser.add_argument(
+        "--metric",
+        choices=["js", "l1"],
+        help="Distance metric for single mode.",
+    )
+
+    args = parser.parse_args()
+
+    if args.assignment_mode == "indexed_stratified" and args.assignment_idx is None:
+        parser.error(
+            "--assignment_idx is required when --assignment_mode indexed_stratified"
+        )
+
+    if (
+        args.assignment_mode != "indexed_stratified"
+        and args.assignment_idx is not None
+    ):
+        parser.error(
+            "--assignment_idx may only be used when --assignment_mode indexed_stratified"
+        )
+
+    if args.mode == "single":
+        missing = []
+        if args.log_type is None:
+            missing.append("--log_type")
+        if args.ngram_mode is None:
+            missing.append("--ngram_mode")
+        if args.metric is None:
+            missing.append("--metric")
+
+        if args.dataset == "WordPress" and args.log_type == "nextcloud":
+            parser.error(
+                "--log_type nextcloud is not valid for dataset WordPress"
+            )
+
+        if missing:
+            parser.error(
+                f"In single mode the following arguments are required: {', '.join(missing)}"
+            )
+
+    return args
+
+
+def run_one_gram(
+    mode: str,
+    dataset: str,
+    assignment_mode: str,
+    assignment_idx: int | None = None,
+    log_type: str | None = None,
+    ngram_mode: str | None = None,
+    metric: str | None = None,
+    out_csv: str | None = None,
+) -> None:
+    output_path = out_csv or (
+        f"results/statistic_one_gram"
+        f"{'_wordpress' if dataset == 'WordPress' else '_nextcloud'}.csv"
+    )
 
     if mode == "single":
         config = {
             "dataset": dataset,
-            "log_type": "syslog",
-            "mode": "char",
-            "metric": "js",
+            "log_type": log_type,
+            "mode": ngram_mode,
+            "metric": metric,
             "min_count": 1,
         }
 
@@ -32,11 +135,15 @@ def run_one_gram(mode: str = "single") -> None:
             assignment_mode=assignment_mode,
             assignment_idx=assignment_idx,
             plot=True,
-            output_path=None,
+            output_path=output_path,
         )
 
     elif mode == "sweep":
-        log_types = ["audit", "syslog"] if use_wordpress else ["audit", "syslog", "nextcloud"]
+        log_types = (
+            ["audit", "syslog"]
+            if dataset == "WordPress"
+            else ["audit", "syslog", "nextcloud"]
+        )
         modes = ["word", "char"]
         metrics = ["l1", "js"]
 
@@ -71,13 +178,12 @@ def run_one_gram(mode: str = "single") -> None:
                 labels=result["labels"],
                 pairwise_results=result["pairwise_results"],
                 distance_name=config["metric"],
-                distance_extractor=lambda item: item[config["metric"]],
+                distance_extractor=lambda item, metric_name=config["metric"]: item[metric_name],
                 hyperparameters={
                     "log_type": config["log_type"],
                     "mode": config["mode"],
+                    "metric": config["metric"],
                     "min_count": config["min_count"],
-                    "assignment_mode": assignment_mode,
-                    "assignment_idx": assignment_idx,
                 },
                 assignment_mode=assignment_mode,
                 assignment_idx=assignment_idx,
@@ -87,9 +193,18 @@ def run_one_gram(mode: str = "single") -> None:
 
     else:
         raise ValueError("mode must be 'single' or 'sweep'")
-    
 
 
 if __name__ == "__main__":
+    args = parse_args()
 
-    run_one_gram("single")
+    run_one_gram(
+        mode=args.mode,
+        dataset=args.dataset,
+        assignment_mode=args.assignment_mode,
+        assignment_idx=args.assignment_idx,
+        log_type=args.log_type,
+        ngram_mode=args.ngram_mode,
+        metric=args.metric,
+        out_csv=args.out_csv,
+    )

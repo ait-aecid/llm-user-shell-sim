@@ -28,13 +28,13 @@ METRIC_KEYS = (
     #"kurtosis",
     #"entropy",
     #"mad",
+    #"l1",
+    #"js",
     "gini_seq",
     "kurtosis_seq",
     "entropy_seq",
     "mad_seq",
-    #"l1",
     "l1_seq",
-    #"js",
     "js_seq",
 )
 

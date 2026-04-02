@@ -256,6 +256,19 @@ def plot_log_hist(
 
     plt.show()
 
+def anonymize_actor_labels(actor_names: List[str]) -> Dict[str, str]:
+    mapping: Dict[str, str] = {}
+    human_idx = 1
+
+    for name in actor_names:
+        if "gpt" in name.lower():
+            mapping[name] = name
+        elif name not in mapping:
+            mapping[name] = f"Human {human_idx}"
+            human_idx += 1
+
+    return mapping
+
 
 def plot_selected_actors(
     selected_file_pairs: List[Tuple[str, str]],
@@ -273,18 +286,23 @@ def plot_selected_actors(
 
     shared_xlim = compute_global_log_xlim(selected_results, series=series)
 
+    actor_names = [label for label, _ in selected_file_pairs]
+    display_names = anonymize_actor_labels(actor_names)
+
     for (label, _), result in zip(selected_file_pairs, selected_results):
+        display_label = display_names[label]
+
         if series == "all":
             values = result["all"]["values"]
             xlabel = "Inter-event time (seconds, log scale)"
-            title = f"{label} - all cluster deltas"
-            save_path = f"{save_dir}/{label}_all.pdf" if save_dir else None
+            title = f"{display_label}"
+            save_path = f"{save_dir}/{display_label}_all.pdf" if save_dir else None
         elif series == "cmd":
             cmd_block = result.get("cmd")
             values = cmd_block["values"] if cmd_block is not None else []
             xlabel = f"Time after {cmd} to next cluster (seconds, log scale)"
-            title = f"{label} - {cmd} to next cluster"
-            save_path = f"{save_dir}/{label}_{cmd}.pdf" if save_dir else None
+            title = f"{display_label} - {cmd} to next cluster"
+            save_path = f"{save_dir}/{display_label}_{cmd}.pdf" if save_dir else None
         else:
             raise ValueError(f"Unknown series: {series}")
 
@@ -296,7 +314,6 @@ def plot_selected_actors(
             xlim=shared_xlim,
             save_path=save_path,
         )
-
 
 if __name__ == "__main__":
     use_wordpress = True
@@ -322,7 +339,7 @@ if __name__ == "__main__":
         selected_file_pairs,
         cluster_window=cluster_window,
         cmd=cmd,
-        series="cmd",   # or "cmd"
+        series="all",   # or "cmd"
         bins_n=50,
         save_dir="results",
     )
