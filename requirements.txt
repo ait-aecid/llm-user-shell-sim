@@ -4,6 +4,7 @@ scikit-learn
 pandas
 matplotlib
 tqdm
+scipy
 
 # Deep learning / model pipelines
 torch
@@ -14,6 +15,21 @@ openai
 # Log template mining
 drain3
 
+# Environment / utility helpers
+python-dotenv
+pexpect
+
+# Agent framework stack
+langgraph
+langchain-core
+langchain-openai
+pydantic
+mcp
+
 # Optional extras used only in archived playground scripts:
 # pyopencl
 # torch-directml
+
+# Non-Python runtime note:
+# The browser agents also expect a working Node.js installation when run with
+# `--playwright`, because they launch `@playwright/mcp` via `node`/`npx`.

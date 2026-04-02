@@ -13,7 +13,7 @@ from typing import TypedDict, Optional, Annotated, Sequence, List
 #from config import API_KEY
 from dotenv import load_dotenv
 load_dotenv()
-from utils import examples_content, cheatsheet_content, ShellSession, init_env_and_log_offsets, read_new_logs
+from ..utils import examples_content, cheatsheet_content, ShellSession, init_env_and_log_offsets, read_new_logs
 import subprocess
 import time
 import signal
@@ -21,7 +21,7 @@ import sys
 import random
 
 # additional tool code
-from vim_agent import run_file_edit_agent
+from .vim_agent import run_file_edit_agent
 
 # global variables
 global_session: ShellSession | None = None

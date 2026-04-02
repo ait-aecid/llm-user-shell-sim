@@ -1,6 +1,4 @@
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from utils import ShellSession
+from ...utils import ShellSession
 
 
 def config(session):
@@ -75,5 +73,4 @@ if __name__ == "__main__":
     #fix(session)       # call this to fix
     
     session.close()
-
 

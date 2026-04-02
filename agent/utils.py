@@ -1,16 +1,24 @@
+from pathlib import Path
 import re
 import pexpect
 import time
 import random
 
 
+AGENT_DIR = Path(__file__).resolve().parent
+PROMPTS_DIR = AGENT_DIR / "prompts"
+WORDPRESS_LOG_DIR = AGENT_DIR / "scenarios" / "wordpress" / "LOGS"
+
+
+def _read_text_file(path: Path) -> str:
+    with path.open("r", encoding="utf-8") as file:
+        return file.read()
+
+
 # Load in-context learning resources used to prime the LLM
-with open("InContextLearning/examples.txt", "r", encoding="utf-8") as file:
-    examples_content = file.read()
-with open("InContextLearning/cheatsheet.txt", "r", encoding="utf-8") as file:
-    cheatsheet_content = file.read()
-with open("InContextLearning/fileEditingRoutine.txt", "r", encoding="utf-8") as file:
-    fileEditingRoutine = file.read()
+examples_content = _read_text_file(PROMPTS_DIR / "examples.txt")
+cheatsheet_content = _read_text_file(PROMPTS_DIR / "cheatsheet.txt")
+fileEditingRoutine = _read_text_file(PROMPTS_DIR / "fileEditingRoutine.txt")
 
 
 
@@ -345,16 +353,17 @@ def read_new_logs(session):
     Read new entries from Nextcloud, audit, and syslog files since the last saved positions
     and write them to corresponding files in the LOGS/ directory.
     '''
+    WORDPRESS_LOG_DIR.mkdir(parents=True, exist_ok=True)
+
     logs = session.run_cmd('tail -c +$((POS_nextcloud+1)) /var/www/nextcloud/data/nextcloud.log')
-    with open("BreaksWordPress/LOGS/nextcloud.log", "w", encoding="utf-8") as f:
+    with (WORDPRESS_LOG_DIR / "nextcloud.log").open("w", encoding="utf-8") as f:
         f.write(logs)
     logs = session.run_cmd('tail -c +$((POS_syslog+1)) /var/log/syslog')
-    with open("BreaksWordPress/LOGS/syslog.log", "w", encoding="utf-8") as f:
+    with (WORDPRESS_LOG_DIR / "syslog.log").open("w", encoding="utf-8") as f:
         f.write(logs)
     logs = session.run_cmd('tail -c +$((POS_authlog+1)) /var/log/auth.log')
-    with open("BreaksWordPress/LOGS/auth.log", "w", encoding="utf-8") as f:
+    with (WORDPRESS_LOG_DIR / "auth.log").open("w", encoding="utf-8") as f:
         f.write(logs)
     logs = session.run_cmd('tail -c +$((POS_audit+1)) /var/log/audit/audit.log', time = 3600) # audit might be big, therefor extract it last.
-    with open("BreaksWordPress/LOGS/audit.log", "w", encoding="utf-8") as f:
+    with (WORDPRESS_LOG_DIR / "audit.log").open("w", encoding="utf-8") as f:
         f.write(logs)
-

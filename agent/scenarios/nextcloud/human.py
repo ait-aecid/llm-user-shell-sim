@@ -1,6 +1,4 @@
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from utils import ShellSession, init_env_and_log_offsets, read_new_logs
+from ...utils import ShellSession, init_env_and_log_offsets, read_new_logs
 
 
 
@@ -24,4 +22,3 @@ if __name__ == "__main__":
         print(">> Logs extracted to LOGS/.")
     finally:
         session.close()
-
