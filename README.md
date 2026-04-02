@@ -21,6 +21,49 @@ The core research question is:
 
 > Are the resulting logs sufficiently different to distinguish AI-driven troubleshooting from human troubleshooting, or are they too similar?
 
+## Quick Start
+
+If you mainly want to explore the existing dataset and run the analysis code, this is the shortest path:
+
+1. Create a Python environment and install the dependencies.
+2. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
+3. Run one baseline ML experiment.
+4. Run one statistical experiment.
+5. Inspect the generated CSV outputs and plots.
+
+Example setup:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Example ML run:
+
+```bash
+python -m src.runners.ml.tfidf_360_nested \
+  --dataset Nextcloud \
+  --model svm \
+  --log_type audit \
+  --n_jobs 4 \
+  --out_csv results/tfidf_nextcloud_audit_svm.csv
+```
+
+Example statistical run:
+
+```bash
+python -m src.runners.stats.one_gram_runner \
+  --mode single \
+  --dataset Nextcloud \
+  --assignment_mode true \
+  --log_type audit \
+  --ngram_mode char \
+  --metric js
+```
+
+If you want to reproduce the original troubleshooting data collection phase, read the VM setup and agent sections below first, because that part depends on the thesis lab infrastructure.
+
 ## Repository Overview
 
 The project consists of two main parts:
@@ -67,6 +110,82 @@ The `data/` directory contains the generated log dataset used by the analysis co
 ## Experimental Setup
 
 The experiments are based on two independent troubleshooting environments.
+
+## VM Setup
+
+The troubleshooting environment is based on a server-side LAMP setup. The same general stack is used throughout the experiments.
+
+### Server VM
+
+- OS: Ubuntu 24.04.2 LTS (`noble`)
+- CPU / RAM: 2 vCPUs, 8 GB RAM (`8192 MB`)
+- Web server: Apache `2.4.58` (Ubuntu build)
+- Database: MariaDB `10.11.13`
+- PHP: PHP `8.3.6`
+- Stack model: always a classic **LAMP** stack
+
+### Application versions
+
+- Nextcloud: `31.0.7`
+- WordPress: `6.9`
+
+### Scenario model
+
+The experiments are carried out in two separate application settings:
+
+- Nextcloud deployed on a dedicated VM
+- WordPress deployed on a dedicated VM
+
+For each environment, faults are intentionally introduced and then solved either by:
+
+- human participants
+- AI agents
+
+During these troubleshooting sessions, logs are recorded for later behavioral analysis.
+
+### Logging infrastructure
+
+The experiments rely on three main logging sources:
+
+- Nextcloud OCC / admin audit logging into `nextcloud.log`
+- Linux audit logging into `audit.log`
+- standard Ubuntu system logging into `syslog`
+
+#### Nextcloud OCC / admin audit logging
+
+The following commands were used to enable and configure the relevant Nextcloud logging behavior:
+
+```bash
+php occ config:app:set admin_audit logfile --value=/var/www/nextcloud/data/nextcloud.log
+sudo -u www-data php occ app:enable admin_audit
+```
+
+In addition, `/var/www/nextcloud/config/config.php` was modified with settings of the following form:
+
+```php
+'loglevel' => 2,
+'log_type_audit' => 'file',
+'logfile_audit' => '/var/www/nextcloud/data/nextcloud.log',
+"log.condition" => [
+  "apps" => ["admin_audit"],
+],
+```
+
+This setup routes the relevant Nextcloud admin-audit events into:
+
+- `/var/www/nextcloud/data/nextcloud.log`
+
+#### Audit logging
+
+Audit rules were deployed via an automated configuration role from the public AIT Cybersecurity repository:
+
+- `https://github.com/orgs/ait-cs-IaaS`
+
+This repository README does not replicate those audit rules verbatim; it documents that the Linux audit subsystem used in the experiments was provisioned from that external configuration source.
+
+#### Syslog
+
+Standard Ubuntu system logging via `syslog` was used in addition to the application-specific and audit logs.
 
 ### 1. Nextcloud scenario
 
