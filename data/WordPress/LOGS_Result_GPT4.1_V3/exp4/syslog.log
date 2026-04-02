@@ -1,9 +1,0 @@
-2026-03-09T14:07:09.921514+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
-2026-03-09T14:08:27.757554+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
-2026-03-09T14:09:01.827056+00:00 arena-wp CRON[1405]: (root) CMD (  [ -x /usr/lib/php/sessionclean ] && if [ ! -d /run/systemd/system ]; then /usr/lib/php/sessionclean; fi)
-2026-03-09T14:09:01.831478+00:00 arena-wp systemd[1]: Starting phpsessionclean.service - Clean php session files...
-2026-03-09T14:09:02.113826+00:00 arena-wp systemd[1]: phpsessionclean.service: Deactivated successfully.
-2026-03-09T14:09:02.113960+00:00 arena-wp systemd[1]: Finished phpsessionclean.service - Clean php session files.
-2026-03-09T14:10:03.983092+00:00 arena-wp systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
-2026-03-09T14:10:04.029165+00:00 arena-wp systemd[1]: sysstat-collect.service: Deactivated successfully.
-2026-03-09T14:10:04.030745+00:00 arena-wp systemd[1]: Finished sysstat-collect.service - system activity accounting tool.

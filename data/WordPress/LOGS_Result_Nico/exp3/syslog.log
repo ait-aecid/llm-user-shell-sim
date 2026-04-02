@@ -1,7 +1,0 @@
-2026-02-26T14:05:51.978273+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
-2026-02-26T14:05:53.050064+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 1057885142 wd_nsec: 1057885124
-2026-02-26T14:06:00.902616+00:00 arena-wp kernel: workqueue: ata_sff_pio_task hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
-2026-02-26T14:06:05.804663+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 3597264574 wd_nsec: 3597264281
-2026-02-26T14:06:22.504049+00:00 arena-wp kernel: workqueue: drm_fb_helper_damage_work hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND
-2026-02-26T14:06:39.281548+00:00 arena-wp kernel: workqueue: blk_mq_requeue_work hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND
-2026-02-26T14:06:42.007054+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 64 times, consider switching to WQ_UNBOUND

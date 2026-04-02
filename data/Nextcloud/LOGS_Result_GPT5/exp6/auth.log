@@ -1,7 +1,0 @@
-2026-01-12T00:35:01.152342+00:00 finalArenaServer CRON[1526]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2026-01-12T00:35:01.162218+00:00 finalArenaServer CRON[1526]: pam_unix(cron:session): session closed for user root
-2026-01-12T00:39:01.379478+00:00 finalArenaServer CRON[1588]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2026-01-12T00:39:01.389557+00:00 finalArenaServer CRON[1588]: pam_unix(cron:session): session closed for user root
-2026-01-12T00:41:01.256481+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=www-data ; COMMAND=/usr/bin/php -d display_errors=1 /var/www/nextcloud/occ status
-2026-01-12T00:41:01.260064+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user www-data(uid=33) by vboxuser(uid=0)
-2026-01-12T00:41:01.668107+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user www-data

@@ -1,6 +1,0 @@
-2025-12-18T11:09:01.108933+00:00 finalArenaServer CRON[1696]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2025-12-18T11:09:01.114845+00:00 finalArenaServer CRON[1696]: pam_unix(cron:session): session closed for user root
-2025-12-18T11:15:01.156637+00:00 finalArenaServer CRON[2024]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2025-12-18T11:15:01.169017+00:00 finalArenaServer CRON[2024]: pam_unix(cron:session): session closed for user root
-2025-12-18T11:17:01.189079+00:00 finalArenaServer CRON[2066]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2025-12-18T11:17:01.219584+00:00 finalArenaServer CRON[2066]: pam_unix(cron:session): session closed for user root

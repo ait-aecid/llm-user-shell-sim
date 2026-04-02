@@ -1,5 +1,0 @@
-2026-01-12T01:25:01.407627+00:00 finalArenaServer CRON[1541]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2026-01-12T01:25:01.420379+00:00 finalArenaServer CRON[1541]: pam_unix(cron:session): session closed for user root
-2026-01-12T01:26:13.020347+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
-2026-01-12T01:26:13.029483+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
-2026-01-12T01:26:18.682084+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root

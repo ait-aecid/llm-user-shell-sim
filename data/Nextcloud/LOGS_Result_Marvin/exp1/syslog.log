@@ -1,4 +1,0 @@
-2025-12-16T12:50:13.460340+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
-2025-12-16T12:50:13.468701+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
-2025-12-16T12:50:13.469119+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.
-2025-12-16T12:51:45.332415+00:00 finalArenaServer kernel: workqueue: blk_mq_run_work_fn hogged CPU for >10000us 8 times, consider switching to WQ_UNBOUND

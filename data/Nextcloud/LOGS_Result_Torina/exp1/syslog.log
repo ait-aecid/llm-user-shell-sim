@@ -1,7 +1,0 @@
-2025-12-17T12:45:01.534366+00:00 finalArenaServer CRON[1698]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)
-2025-12-17T12:48:57.617222+00:00 finalArenaServer systemd[1]: Starting systemd-tmpfiles-clean.service - Cleanup of Temporary Directories...
-2025-12-17T12:48:57.758548+00:00 finalArenaServer systemd[1]: systemd-tmpfiles-clean.service: Deactivated successfully.
-2025-12-17T12:48:57.759523+00:00 finalArenaServer systemd[1]: Finished systemd-tmpfiles-clean.service - Cleanup of Temporary Directories.
-2025-12-17T12:50:08.661940+00:00 finalArenaServer systemd[1]: Starting sysstat-collect.service - system activity accounting tool...
-2025-12-17T12:50:08.705403+00:00 finalArenaServer systemd[1]: sysstat-collect.service: Deactivated successfully.
-2025-12-17T12:50:08.705685+00:00 finalArenaServer systemd[1]: Finished sysstat-collect.service - system activity accounting tool.

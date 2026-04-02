@@ -1,2 +1,0 @@
-2026-02-27T18:55:01.527946+00:00 arena-wp CRON[1447]: pam_unix(cron:session): session opened for user root(uid=0) by root(uid=0)
-2026-02-27T18:55:01.612123+00:00 arena-wp CRON[1447]: pam_unix(cron:session): session closed for user root

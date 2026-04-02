@@ -1,3 +1,0 @@
-2026-02-24T11:43:22.796218+00:00 arena-wp kernel: clocksource: Long readout interval, skipping watchdog check: cs_nsec: 5520896671 wd_nsec: 5520896284
-2026-02-24T11:44:51.396275+00:00 arena-wp kernel: workqueue: e1000_watchdog [e1000] hogged CPU for >10000us 32 times, consider switching to WQ_UNBOUND
-2026-02-24T11:45:02.015883+00:00 arena-wp CRON[1524]: (root) CMD (command -v debian-sa1 > /dev/null && debian-sa1 1 1)

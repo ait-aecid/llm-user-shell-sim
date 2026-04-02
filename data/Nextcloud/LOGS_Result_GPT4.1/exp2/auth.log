@@ -1,3 +1,0 @@
-2026-01-11T22:30:47.090236+00:00 finalArenaServer sudo:     root : TTY=pts/1 ; PWD=/root ; USER=root ; COMMAND=/usr/bin/vim /var/www/nextcloud/config/config.php
-2026-01-11T22:30:47.092169+00:00 finalArenaServer sudo: pam_unix(sudo:session): session opened for user root(uid=0) by vboxuser(uid=0)
-2026-01-11T22:30:51.644835+00:00 finalArenaServer sudo: pam_unix(sudo:session): session closed for user root
