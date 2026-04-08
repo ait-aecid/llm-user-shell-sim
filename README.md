@@ -25,7 +25,7 @@ The core research question is:
 
 If you mainly want to explore the existing dataset and run the analysis code, this is the shortest path:
 
-1. If you received the dataset as `data.zip`, extract it.
+1. Extract the dataset from `data.zip`.
 2. Create a Python environment and install the dependencies.
 3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
 4. Run one baseline ML experiment.
