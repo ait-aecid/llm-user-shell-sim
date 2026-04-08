@@ -10,7 +10,7 @@ The thesis is built around two controlled web application environments:
 In each environment, faults are intentionally introduced, for example:
 
 - missing pages
-- internal server errors (`500`)
+- internal server errors (`5xx`)
 - broken buttons
 - broken upload functionality
 - configuration mistakes
@@ -26,8 +26,7 @@ The core research question is:
 If you mainly want to explore the existing dataset and run the analysis code, this is the shortest path:
 
 1. Extract the dataset from `data.zip`.
-2. Create a Python environment and install the dependencies.
-3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
+2. Install Python 3.12.3 (exact version used in this project), create and activate a virtual environment, and install the project dependencies via `pip install -r requirements.txt`.3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
 4. Run one baseline ML experiment.
 5. Run one statistical experiment.
 6. Inspect the generated CSV outputs and plots.
@@ -190,9 +189,10 @@ This setup routes the relevant Nextcloud admin-audit events into:
 
 #### Audit logging
 
-Audit rules were deployed via an automated configuration role from the public AIT Cybersecurity repository:
+Audit rules were deployed using Ansible via an automated configuration role from the public AIT Cybersecurity repository:
 
 - [AIT Cybersecurity Repository](https://github.com/orgs/ait-cs-IaaS)
+- [ansible-auditd role](https://github.com/ait-cs-IaaS/ansible-auditd)
 
 This repository README does not reproduce those audit rules exactly; it states that the Linux audit subsystem used in the experiments was set up based on that external configuration source.
 
@@ -202,7 +202,7 @@ Standard Ubuntu system logging via `syslog` was used in addition to the applicat
 
 ### 1. Nextcloud scenario
 
-- a virtual machine running a Nextcloud server
+- a virtual machine configured as a Linux server hosting a Nextcloud instance.
 - a client VM for interaction
 - intentionally injected faults
 - recorded logs including:
@@ -212,7 +212,7 @@ Standard Ubuntu system logging via `syslog` was used in addition to the applicat
 
 ### 2. WordPress scenario
 
-- a virtual machine running a WordPress server
+- a virtual machine configured as a Linux server hosting a WordPress instance.
 - a client VM for interaction
 - intentionally injected faults
 - recorded logs including:
@@ -225,10 +225,10 @@ The `agent/` directory contains the automation used to perform troubleshooting a
 
 ### Agent types
 
-- `agent/runners/LLM_Agent.py`
-  Terminal-based troubleshooting agent for Nextcloud
-- `agent/runners/LLM_Agent_WP.py`
-  Terminal-based troubleshooting agent for WordPress
+- `agent/runners/LLM_Agent.py`  
+  Terminal-based troubleshooting agent for a Linux-based server hosting a Nextcloud instance
+- `agent/runners/LLM_Agent_WP.py`  
+  Terminal-based troubleshooting agent for a Linux-based server hosting a WordPress instance
 - `agent/runners/browser_agent.py`
   Browser automation agent for Nextcloud
 - `agent/runners/browser_agent_WP.py`
@@ -267,7 +267,7 @@ Each scenario file contains:
 
 This is the most important section if you want to run the agent code on your own infrastructure.
 
-The connection and privilege assumptions are implemented in [`agent/utils.py`](/home/moserl/Dataanalysis/agent/utils.py).
+The connection and privilege assumptions are implemented in [`agent/utils.py`](agent/utils.py).
 
 ### SSH and privilege requirements
 
@@ -309,7 +309,7 @@ These paths are initialized in `init_env_and_log_offsets(session)` and read by `
 
 ### Python
 
-Use Python 3.10+ recommended.
+Use Python 3.12.3 (exact version used in this project).
 
 Install dependencies with:
 
@@ -485,7 +485,7 @@ All of these runners use **nested evaluation logic**:
 - inner search: select configuration using validation performance only
 - final reporting: evaluate the selected configuration on the test split
 
-The actor pair splits are generated in [`src/core/ml/val_test_combs.py`](/home/moserl/Dataanalysis/src/core/ml/val_test_combs.py).
+The actor pair splits are generated in [`src/core/ml/val_test_combs.py`](src/core/ml/val_test_combs.py).
 
 ### Common concepts
 
@@ -902,7 +902,7 @@ If you mainly want to work with the existing dataset:
 
 If you want to rerun the troubleshooting collection phase:
 
-1. Adapt [`agent/utils.py`](/home/moserl/Dataanalysis/agent/utils.py) to your SSH target and filesystem layout.
+1. Adapt [`agent/utils.py`](agent/utils.py) to your SSH target and filesystem layout.
 2. Prepare the corresponding Nextcloud or WordPress VM.
 3. Apply one of the fault scenarios.
 4. Execute the human or AI agent run.
