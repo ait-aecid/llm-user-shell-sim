@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Evaluate whether the best observed configuration exceeds a null distribution.
+
+For each null CSV, the script keeps only the best-scoring row under a chosen
+metric, compares that distribution against the best row from the correctly
+labeled run, and reports an empirical p-value plus a compact visualization.
+"""
 from __future__ import annotations
 
 import argparse
@@ -14,6 +20,11 @@ METRIC_CHOICES = ["silhouette", "cliffs", "norm_mean_diff"]
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for null-distribution evaluation and plotting.
+
+    The interface separates null runs from the correctly labeled run and
+    exposes plotting and empirical p-value options used in the analysis.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Plot null-hypothesis distributions for statistic CSVs by selecting "
@@ -96,6 +107,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    """Validate that the required input paths exist and have the expected type.
+
+    The script assumes a directory of null CSVs and a single observed CSV,
+    so path errors are surfaced before any analysis starts.
+    """
     if not args.null_dir.exists():
         raise FileNotFoundError(f"Null directory does not exist: {args.null_dir}")
     if not args.null_dir.is_dir():
@@ -105,6 +121,11 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def compute_metric_series(df: pd.DataFrame, metric: str) -> pd.Series:
+    """Compute the ranking metric used to select the best row in one CSV.
+
+    The derived metric must be comparable within a file; invalid or undefined
+    values are coerced to `NaN` so they are excluded from row selection.
+    """
     if metric == "silhouette":
         col = "silhouette_overall_mean"
         if col not in df.columns:
@@ -134,6 +155,8 @@ def compute_metric_series(df: pd.DataFrame, metric: str) -> pd.Series:
         ai_human = pd.to_numeric(df["ai_human_mean"], errors="coerce")
         human_human = pd.to_numeric(df["human_human_mean"], errors="coerce")
 
+        # Compare the cross-group mean to the average within-group baseline and
+        # normalize by the combined scale to keep values comparable across CSVs.
         within_mean = (ai_ai + human_human) / 2.0
         denom = ai_human + within_mean
 
@@ -144,7 +167,13 @@ def compute_metric_series(df: pd.DataFrame, metric: str) -> pd.Series:
 
     raise ValueError(f"Unsupported metric: {metric}")
 
+
 def extract_best_row_value(csv_path: Path, metric: str) -> Tuple[float, pd.Series]:
+    """Return the highest valid metric value and its source row from one CSV.
+
+    Rows with undefined metric values are ignored. The returned row is copied
+    and annotated with the derived metric for downstream reporting.
+    """
     df = pd.read_csv(csv_path)
 
     metric_values = compute_metric_series(df, metric)
@@ -167,6 +196,11 @@ def collect_null_best_values(
     glob_pattern: str,
     metric: str,
 ) -> List[Tuple[Path, float, pd.Series]]:
+    """Collect the best row from each null CSV under the chosen metric.
+
+    Each null file contributes one value to the empirical null distribution,
+    matching the same "best-of-file" selection rule used for the observed run.
+    """
     csv_paths = sorted(null_dir.glob(glob_pattern))
     if not csv_paths:
         raise FileNotFoundError(
@@ -185,11 +219,18 @@ def empirical_p_value(
     observed: float,
     two_sided: bool = False,
 ) -> float:
+    """Compute a smoothed empirical p-value from the null distribution.
+
+    The one-sided test asks how often null values are at least as large as the
+    observed value. The two-sided variant measures extremeness around the null mean.
+    """
     n = len(null_values)
     if n == 0:
         raise ValueError("Null distribution is empty.")
 
     if two_sided:
+        # Centering at the null mean gives a symmetric notion of extremeness for
+        # the empirical two-sided test without assuming a parametric null model.
         center = float(np.mean(null_values))
         obs_dev = abs(observed - center)
         count = int(np.sum(np.abs(null_values - center) >= obs_dev))
@@ -200,6 +241,11 @@ def empirical_p_value(
 
 
 def metric_axis_label(metric: str, ylabel_override: str | None) -> str:
+    """Return the axis label for the selected metric.
+
+    A user-provided override takes precedence; otherwise a readable default is
+    chosen so the plot remains interpretable without extra context.
+    """
     if ylabel_override is not None:
         return ylabel_override
     if metric == "silhouette":
@@ -212,6 +258,11 @@ def metric_axis_label(metric: str, ylabel_override: str | None) -> str:
 
 
 def metric_default_xlim(metric: str) -> tuple[float, float] | None:
+    """Return default x-limits when the metric has a known bounded range.
+
+    Metrics shown here are bounded to [-1, 1], which keeps null plots visually
+    comparable across runs without requiring manual axis tuning.
+    """
     if metric == "silhouette":
         return (-1.0, 1.0)
     if metric == "cliffs":
@@ -233,6 +284,11 @@ def make_plot(
     seed: int,
     p_value: float,
 ) -> None:
+    """Plot the null best-value distribution with the observed value overlaid.
+
+    The figure combines a compact boxplot, jittered null points, and an
+    annotation for the observed best score and empirical p-value.
+    """
     rng = np.random.default_rng(seed)
 
     fig, ax = plt.subplots(figsize=figsize)
@@ -296,6 +352,7 @@ def make_plot(
         ax.set_title(title)
 
     x_min, x_max = ax.get_xlim()
+    # Keep the annotation near the observed line while avoiding the right edge.
     annotation_x = min(
         observed_value + 0.03 * (x_max - x_min),
         x_max - 0.05 * (x_max - x_min),
@@ -336,6 +393,11 @@ def print_best_row_summary(
     best_value: float,
     best_row: pd.Series,
 ) -> None:
+    """Print a compact summary of the selected best row for one CSV.
+
+    The summary highlights the file, method metadata, and the metric value that
+    determined why this row was chosen.
+    """
     distance_name = best_row.get("distance_name", "n/a")
     approach = best_row.get("approach", "n/a")
     hyperparams = best_row.get("hyperparameters_json", "n/a")
@@ -349,9 +411,15 @@ def print_best_row_summary(
 
 
 def main() -> None:
+    """Run the null-vs-observed evaluation and generate the final report.
+
+    The workflow builds the null distribution from per-file maxima, computes
+    the empirical p-value against the observed run, and renders a summary plot.
+    """
     args = parse_args()
     validate_args(args)
 
+    # ---- Load best-per-file values ----
     null_results = collect_null_best_values(args.null_dir, args.glob, args.metric)
     null_values = np.array([value for _, value, _ in null_results], dtype=float)
 
@@ -360,12 +428,14 @@ def main() -> None:
         args.metric,
     )
 
+    # ---- Evaluate observed result against the null distribution ----
     p_value = empirical_p_value(
         null_values,
         observed_value,
         two_sided=args.two_sided,
     )
 
+    # ---- Report numeric summary and selected rows ----
     print("\n=== Summary ===")
     print(f"Metric:                {args.metric}")
     print(f"Number of null files:  {len(null_values)}")
@@ -387,6 +457,7 @@ def main() -> None:
     for csv_path, best_value, best_row in null_results:
         print_best_row_summary("Null", csv_path, best_value, best_row)
 
+    # ---- Visualize null distribution and observed best value ----
     make_plot(
         null_values=null_values,
         observed_value=observed_value,

@@ -1,21 +1,39 @@
+"""Nextcloud scenario for a database credential mismatch.
+
+The break edits ``config.php`` directly so the failure persists even after the
+application can no longer use ``occ``.
+"""
+
 from ...utils import ShellSession
 
 
 def config(session):
-    # BREAK: edit config.php directly (don’t use occ here)
+    """Replace the stored database credentials with plausible wrong values.
+
+    The edit is applied directly to ``config.php`` because once database access
+    fails, ``occ`` is no longer a reliable recovery path.
+    """
+    # Direct file edits keep the scenario reproducible even when Nextcloud
+    # cannot bootstrap far enough to run its CLI.
     session.run_cmd(r'''sudo sed -i -E "s/('dbuser'[[:space:]]*=>[[:space:]]*)'[^']*',/\1'nc_user',/" /var/www/nextcloud/config/config.php''')
     session.run_cmd(r'''sudo sed -i -E "s/('dbpassword'[[:space:]]*=>[[:space:]]*)'[^']*',/\1'NcApp_2025',/" /var/www/nextcloud/config/config.php''')
 
-    # No need to reload apache for config.php changes, but harmless if you want:
+    # Reloading Apache is not strictly required, but it makes the failure
+    # visible on the next request without waiting for process reuse.
     session.run_cmd(r'sudo systemctl reload apache2 || true')
 
 
 def fix(session):
-    # BREAK: edit config.php directly (don’t use occ here)
+    """Restore the known-good database credentials in ``config.php``.
+
+    The fix also bypasses ``occ`` so it remains usable even while the
+    application is still unable to connect to MySQL.
+    """
     session.run_cmd(r'''sudo sed -i -E "s/('dbuser'[[:space:]]*=>[[:space:]]*)'[^']*',/\1'nextcloud',/" /var/www/nextcloud/config/config.php''')
     session.run_cmd(r'''sudo sed -i -E "s/('dbpassword'[[:space:]]*=>[[:space:]]*)'[^']*',/\1'passw0rd',/" /var/www/nextcloud/config/config.php''')
 
-    # No need to reload apache for config.php changes, but harmless if you want:
+    # Use the same direct edit path here so recovery does not depend on the app
+    # already being healthy.
     session.run_cmd(r'sudo systemctl reload apache2 || true')
 
     return
@@ -62,7 +80,8 @@ def fix(session):
 
 
 
-# Problem: Internal Server Error 500
+# ---- Scenario entry point ----
+# Symptom: Nextcloud returns an internal server error.
 
 if __name__ == "__main__":
     session = ShellSession()
@@ -73,4 +92,3 @@ if __name__ == "__main__":
     #fix(session)       # call this to fix
     
     session.close()
-

@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Utilities for enumerating human/AI group combinations for evaluation.
+
+The key distinction is between the observed assignment and null-style runs,
+where actor labels may be randomized before validation/test splits are built.
+"""
+
 import random
 from itertools import product
 from typing import List, Tuple, Optional
@@ -16,6 +22,12 @@ def make_human_ai_pairs(
     randomize_actor_labels: bool = False,
     assignment_idx: Optional[int] = None,
 ) -> List[List[str]]:
+    """Return all human/AI group pairs under the current label assignment.
+
+    If label randomization is enabled, pairs are built after the requested
+    null assignment has been applied.
+    """
+    # ---- Resolve groups under the requested assignment ----
     cfg = LoadConfig(
         dataset=dataset,
         randomize_actor_labels=randomize_actor_labels,
@@ -31,13 +43,13 @@ def make_val_test_splits(
     randomize_actor_labels: bool = False,
     assignment_idx: Optional[int] = None,
 ) -> List[Tuple[List[str], List[str]]]:
+    """Return all disjoint validation/test group combinations.
+
+    Splits are constructed under the current assignment, including null
+    permutations when requested, and enforce distinct human and AI groups
+    across validation and test.
     """
-    Returns all (val_groups, test_groups) where:
-      val_groups  = [human_v, ai_v]
-      test_groups = [human_t, ai_t]
-    and sets are disjoint => human_v != human_t AND ai_v != ai_t
-    under the CURRENT label assignment.
-    """
+    # ---- Resolve groups under the requested assignment ----
     cfg = LoadConfig(
         dataset=dataset,
         randomize_actor_labels=randomize_actor_labels,
@@ -45,14 +57,17 @@ def make_val_test_splits(
     )
     human_groups, ai_groups = resolve_human_ai_groups(cfg)
 
+    # ---- Enumerate valid val/test combinations ----
     splits: List[Tuple[List[str], List[str]]] = []
     for hv, av in product(human_groups, ai_groups):
         for ht, at in product(human_groups, ai_groups):
+            # Validation and test must be disjoint within each actor type.
             if hv == ht:
                 continue
             if av == at:
                 continue
             splits.append(([hv, av], [ht, at]))
 
+    # Keep ordering stable across runs while avoiding systematic pair ordering.
     random.Random(SPLIT_SHUFFLE_SEED).shuffle(splits)
     return splits

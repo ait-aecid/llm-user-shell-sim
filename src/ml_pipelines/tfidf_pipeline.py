@@ -1,4 +1,9 @@
-# tfidf/pipeline.py
+"""TF-IDF baseline pipeline for text classification experiments.
+
+The module defines vectorizer/model factories and a simple candidate search
+routine that selects on validation performance and evaluates the test set in a
+research-safe way by default.
+"""
 
 from __future__ import annotations
 
@@ -22,9 +27,7 @@ from src.core.ml.splits import Split
 from src.core.ml.eval import EvalResult, evaluate_classifier
 
 
-# -----------------------------
-# 1) Vectorizer config
-# -----------------------------
+# ---- Vectorizer configuration ----
 @dataclass(frozen=True)
 class VectorizerConfig:
     analyzer: str = "word"
@@ -38,6 +41,11 @@ class VectorizerConfig:
 
 
 def build_vectorizer(cfg: VectorizerConfig) -> TfidfVectorizer:
+    """Construct a TF-IDF vectorizer from an immutable configuration.
+
+    The config is kept hashable so identical settings can be cached during
+    search. Returns an unfitted sklearn vectorizer instance.
+    """
     return TfidfVectorizer(
         analyzer=cfg.analyzer,
         ngram_range=cfg.ngram_range,
@@ -50,15 +58,18 @@ def build_vectorizer(cfg: VectorizerConfig) -> TfidfVectorizer:
     )
 
 
-# -----------------------------
-# 2) Model factory
-# -----------------------------
+# ---- Model factory ----
 def build_model(
     model_name: str,
     params: Optional[Dict[str, Any]] = None,
     *,
     random_state: int = 42,
 ) -> BaseEstimator:
+    """Instantiate a supported linear baseline or dummy classifier.
+
+    Defaults are chosen to be sensible for sparse text features, while
+    `params` can override model-specific settings. Returns an unfitted estimator.
+    """
 
     params = params or {}
 
@@ -109,9 +120,7 @@ def build_model(
     raise ValueError(f"Unknown model_name='{model_name}'")
 
 
-# -----------------------------
-# 3) Hyperparameter search
-# -----------------------------
+# ---- Candidate search ----
 @dataclass(frozen=True)
 class Candidate:
     vectorizer: VectorizerConfig
@@ -129,6 +138,13 @@ def search(
     evaluate_test_for_all: bool = False,
     verbose: bool = True,
 ) -> Tuple[Candidate, EvalResult, EvalResult, List[Tuple[Candidate, EvalResult]]]:
+    """Search over vectorizer-model candidates using a fixed train/val/test split.
+
+    Selection is based only on validation performance. Test evaluation is
+    deferred to the best candidate by default to avoid optimistic reporting.
+    Returns the best candidate, its validation result, its test result, and all
+    validation results.
+    """
 
     if metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("metric must be one of: f1_macro, f1_weighted, accuracy")
@@ -150,7 +166,8 @@ def search(
     X_val, y_val = X[split.val_idx], y[split.val_idx]
     X_test, y_test = X[split.test_idx], y[split.test_idx]
 
-    # ---- Cache vectorization per unique vectorizer config ----
+    # Vectorization is the expensive part; reuse it across candidates that only
+    # differ in classifier settings.
     vec_cache = {}
     grouped: Dict[VectorizerConfig, List[Candidate]] = defaultdict(list)
     for cand in candidates:
@@ -175,6 +192,8 @@ def search(
 
         X_test_vec = None
         if evaluate_test_for_all:
+            # This mode is useful for diagnostics, but it should not be used for
+            # headline results because it exposes test performance during search.
             X_test_vec = vec.transform(X_test)
 
         for cand in cand_group:
@@ -194,6 +213,8 @@ def search(
             all_val.append((cand, val_res))
 
             if best_val is None or score(val_res) > score(best_val):
+                # Keep the test score synchronized with the current validation
+                # leader only when test evaluation is explicitly enabled.
                 best = cand
                 best_val = val_res
                 if evaluate_test_for_all:
@@ -210,7 +231,7 @@ def search(
 
     assert best is not None and best_val is not None
 
-    # Evaluate test once for best (recommended path)
+    # Recommended evaluation path: touch the test set once after model selection.
     if best_test is None:
         if verbose:
             print("\nEvaluating best candidate on TEST set...\n")

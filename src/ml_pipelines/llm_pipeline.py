@@ -1,16 +1,9 @@
-# llm_pipeline/pipeline.py
-#
-# Pipeline 4: Bundle + Embedding-Retrieval (RAG) + Hybrid (Embeddings-fastpath + LLM fallback)
-#
-# SPEED UPDATES:
-# - Batch embeddings during prediction (GPU-friendly)
-# - Avoid per-query renormalization for cosine if embeddings are normalized once
-# - Optional ANN retrieval backend (FAISS) to avoid full scan
-#
-# Dependencies:
-#   pip install numpy openai sentence-transformers torch tqdm
-# Optional for ANN:
-#   pip install faiss-cpu   (or faiss-gpu)
+"""Hybrid RAG-style classification pipeline for bundled text examples.
+
+The pipeline builds class-specific retrieval indices over training bundles,
+uses embedding similarity as a fast decision rule, and falls back to an LLM
+only when retrieval evidence is weak or incomplete.
+"""
 
 from __future__ import annotations
 
@@ -51,10 +44,13 @@ except Exception:
     _FAISS_OK = False
 
 
-# -----------------------------
-# Bundling
-# -----------------------------
+# ---- Bundling ----
 def _normalize_bundle(text: str) -> str:
+    """Normalize line endings and trim trailing whitespace within a bundle.
+
+    This keeps bundle text stable across platforms and reduces formatting
+    variation before embedding or prompting.
+    """
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = "\n".join(line.rstrip() for line in text.split("\n"))
     return text.strip()
@@ -68,6 +64,11 @@ def _bundle_texts(
     strategy: str,
     drop_last: bool,
 ) -> List[str]:
+    """Group sequential texts into fixed or sliding bundles.
+
+    Bundles are formed within each class split rather than across labels, so
+    each bundle preserves a single ground-truth class.
+    """
     if bundle_size <= 0:
         raise ValueError("bundle_size must be > 0")
 
@@ -108,14 +109,12 @@ def _bundle_texts(
     return bundles
 
 
-# -----------------------------
-# Similarity helpers
-# -----------------------------
+# ---- Similarity helpers ----
 def _dot_sims(query: np.ndarray, mat: np.ndarray) -> np.ndarray:
-    """
-    query: (D,), mat: (N, D) -> sims: (N,)
-    Assumes BOTH query and mat rows are already L2-normalized.
-    Then cosine == dot product.
+    """Return similarity scores between one query vector and many candidates.
+
+    Both inputs are assumed to be L2-normalized, so the dot product is the
+    cosine similarity used for retrieval and fast-path scoring.
     """
     q = query.astype(np.float32, copy=False)
     m = mat.astype(np.float32, copy=False)
@@ -123,27 +122,24 @@ def _dot_sims(query: np.ndarray, mat: np.ndarray) -> np.ndarray:
 
 
 def _l2_normalize_rows(x: np.ndarray) -> np.ndarray:
+    """L2-normalize a 2D embedding matrix row-wise."""
     x = x.astype(np.float32, copy=False)
     norms = np.linalg.norm(x, axis=1, keepdims=True) + 1e-12
     return x / norms
 
 
 def _l2_normalize_vec(x: np.ndarray) -> np.ndarray:
+    """L2-normalize a single embedding vector."""
     x = x.astype(np.float32, copy=False)
     return x / (np.linalg.norm(x) + 1e-12)
 
 
-# -----------------------------
-# In-memory index (NumPy or FAISS)
-# -----------------------------
+# ---- In-memory retrieval index ----
 class _InMemoryPerClassIndex:
-    """
-    Stores embeddings + bundle text per label.
-    Retrieval is done per class to guarantee class-balanced examples.
+    """Store per-class embeddings and bundle texts for nearest-neighbor lookup.
 
-    Backends:
-      - numpy: full scan (dot product) + argpartition topk
-      - faiss: ANN / exact IP search (depending on index used)
+    Retrieval is performed independently within each class so the prompt and
+    similarity comparison remain class-balanced by construction.
     """
 
     def __init__(self, *, backend: str = "numpy", faiss_hnsw_m: int = 32):
@@ -158,35 +154,46 @@ class _InMemoryPerClassIndex:
 
     @property
     def backend(self) -> str:
+        """Return the active retrieval backend."""
         return self._backend
 
     def add(self, label: str, emb: np.ndarray, txt: List[str]) -> None:
+        """Register normalized embeddings and aligned bundle texts for a label.
+
+        When FAISS is requested and available, the corresponding per-class
+        index is built immediately from these embeddings.
+        """
         if len(txt) != emb.shape[0]:
             raise ValueError("emb and txt must align")
 
-        # Keep float32 and ensure normalized rows (important for fast dot-cosine)
+        # Cosine retrieval is implemented as an inner product, so stored rows
+        # must be normalized once here rather than on every lookup.
         emb = emb.astype(np.float32, copy=False)
         emb = _l2_normalize_rows(emb)
 
         self._emb[label] = emb
         self._txt[label] = list(txt)
 
-        # Build FAISS index if requested + available
+        # FAISS remains optional; a missing dependency should not break the run.
         if self._backend == "faiss":
             if not _FAISS_OK:
-                # silently fall back to numpy if faiss isn't installed
+                # Fall back to exact NumPy retrieval when ANN support is absent.
                 self._backend = "numpy"
                 return
 
             d = emb.shape[1]
-            # HNSW IP index: fast ANN for inner product (cosine if normalized)
-            # If you want exact, you can swap to IndexFlatIP.
+            # Inner-product search is equivalent to cosine after normalization.
             index = faiss.IndexHNSWFlat(d, self._faiss_hnsw_m, faiss.METRIC_INNER_PRODUCT)
             index.hnsw.efConstruction = 80
             index.add(emb)
             self._faiss_index[label] = index
 
     def topk(self, label: str, query_emb: np.ndarray, k: int) -> List[Tuple[float, str]]:
+        """Return the top-k retrieved bundles for one class label.
+
+        Results are scored by cosine similarity and include both the score and
+        the original bundle text used later for prompting.
+        """
         if k <= 0:
             return []
         if label not in self._emb or self._emb[label].shape[0] == 0:
@@ -197,7 +204,7 @@ class _InMemoryPerClassIndex:
         if self._backend == "faiss" and _FAISS_OK and label in self._faiss_index:
             index = self._faiss_index[label]
             k_eff = min(k, self._emb[label].shape[0])
-            # FAISS expects (nq, d)
+            # FAISS expects a batch dimension even for a single query.
             D, I = index.search(q.reshape(1, -1), k_eff)
             sims = D[0]
             idxs = I[0]
@@ -208,7 +215,7 @@ class _InMemoryPerClassIndex:
                 out.append((float(sim), self._txt[label][int(i)]))
             return out
 
-        # numpy fallback
+        # NumPy provides an exact fallback when FAISS is disabled or unavailable.
         sims = _dot_sims(q, self._emb[label])
         k_eff = min(k, sims.shape[0])
         idx = np.argpartition(-sims, k_eff - 1)[:k_eff]
@@ -216,11 +223,10 @@ class _InMemoryPerClassIndex:
         return [(float(sims[i]), self._txt[label][int(i)]) for i in idx]
 
 
-# -----------------------------
-# Config
-# -----------------------------
+# ---- Config ----
 @dataclass(frozen=True)
 class RAGLLMConfig:
+    """Configuration for bundling, retrieval, and optional LLM fallback."""
     # bundling hyperparams
     bundle_size: int = 50
     bundle_strategy: str = "fixed"   # fixed | sliding
@@ -261,10 +267,9 @@ class RAGLLMConfig:
     seed: int = 42
 
 
-# -----------------------------
-# OpenAI helpers (fallback only)
-# -----------------------------
+# ---- OpenAI fallback helpers ----
 def _truncate(s: str, max_chars: int) -> str:
+    """Clip long text blocks to keep retrieval context within prompt budget."""
     if max_chars <= 0:
         return ""
     if len(s) <= max_chars:
@@ -281,6 +286,11 @@ def _build_messages(
     retrieved_b: List[Tuple[float, str]],
     max_chars_per_retrieved: int,
 ) -> Tuple[str, str]:
+    """Build the system and user prompts for fallback classification.
+
+    The prompt presents retrieved examples from both classes explicitly so the
+    model compares balanced evidence rather than relying on prior frequency.
+    """
     sys = (
         "You are a strict binary classifier for log bundles.\n"
         "Return ONLY valid JSON with exactly one key: \"label\".\n"
@@ -289,6 +299,7 @@ def _build_messages(
     )
 
     def fmt_block(name: str, items: List[Tuple[float, str]]) -> str:
+        """Format one class-specific retrieval block for the prompt."""
         lines = [f"Class {name} retrieved examples:"]
         for i, (sim, txt) in enumerate(items, 1):
             lines.append(f"[{name} ex {i}] sim={sim:.4f}\n{_truncate(txt, max_chars_per_retrieved)}\n")
@@ -307,6 +318,11 @@ def _build_messages(
 
 
 def _parse_label(raw: str, *, valid_labels: Set[str]) -> str:
+    """Parse and validate the fallback model response.
+
+    Only a single JSON field named ``label`` is accepted to keep the output
+    contract stable during retries and evaluation.
+    """
     raw = (raw or "").strip()
     obj = json.loads(raw)
     if not isinstance(obj, dict) or set(obj.keys()) != {"label"}:
@@ -330,6 +346,11 @@ def _chat_classify(
     user_msg: str,
     valid_labels: Set[str],
 ) -> str:
+    """Classify one bundle with the chat model using bounded retries.
+
+    Retries are reserved for transient API failures; invalid outputs still
+    surface as exceptions after parsing and validation.
+    """
     last_err: Optional[Exception] = None
     for attempt in range(max_retries + 1):
         try:
@@ -354,6 +375,7 @@ def _chat_classify(
 
 
 def _aggregate_sims(sims: np.ndarray, *, agg: str) -> float:
+    """Aggregate retrieved similarities into a single class score."""
     if sims.size == 0:
         return float("nan")
     if agg == "mean":
@@ -363,10 +385,9 @@ def _aggregate_sims(sims: np.ndarray, *, agg: str) -> float:
     raise ValueError(f"Unknown score_agg='{agg}', expected 'mean' or 'median'.")
 
 
-# -----------------------------
-# Local embedding helpers (SentenceTransformers)
-# -----------------------------
+# ---- Local embedding helpers ----
 def _load_local_embedder(cfg: RAGLLMConfig) -> SentenceTransformer:
+    """Load the local sentence-transformer used for retrieval embeddings."""
     return SentenceTransformer(cfg.local_embedding_model, device=cfg.local_embedding_device)
 
 
@@ -379,6 +400,11 @@ def _embed_texts_local(
     desc: str = "embed",
     verbose: bool = True,
 ) -> np.ndarray:
+    """Embed texts in batches and return a float32 matrix.
+
+    Normalization is applied consistently so retrieval and fast-path scoring
+    can use cosine similarity via dot products.
+    """
     if not texts:
         return np.zeros((0, 1), dtype=np.float32)
 
@@ -400,15 +426,13 @@ def _embed_texts_local(
 
     out = np.vstack(out_chunks) if out_chunks else np.zeros((0, 1), dtype=np.float32)
 
-    # Ensure normalized if requested
+    # Keep normalization explicit because downstream retrieval assumes it.
     if normalize:
         out = _l2_normalize_rows(out)
     return out
 
 
-# -----------------------------
-# Primitive: run ONE config
-# -----------------------------
+# ---- Single-run evaluation ----
 def run_one(
     examples: List[Example],
     split: Split,
@@ -417,6 +441,11 @@ def run_one(
     *,
     verbose: bool = True,
 ) -> Dict[str, EvalResult]:
+    """Run one configuration on a fixed train/val/test split.
+
+    Training bundles are indexed by class, validation and test bundles are
+    predicted bundle-wise, and metrics are returned for each evaluated split.
+    """
     if verbose:
         print("\n" + "=" * 80)
         print("[LLM] RUN_ONE START")
@@ -464,7 +493,7 @@ def run_one(
         print(f"[LLM] VAL  : {len(X_val)}")
         print(f"[LLM] TEST : {len(X_test)}")
 
-    # ----- build TRAIN bundles per class -----
+    # ---- Build class-specific training bundles ----
     train_lines_by_class: Dict[str, List[str]] = {label_a: [], label_b: []}
     for txt, lab in zip(X_train, y_train):
         train_lines_by_class[lab].append(str(txt))
@@ -482,7 +511,7 @@ def run_one(
         if verbose:
             print(f"[LLM] {lab}: {len(bs)} TRAIN bundles")
 
-    # ----- embed TRAIN bundles (local) -----
+    # ---- Embed and index training bundles ----
     if verbose:
         print("\n[LLM] Embedding TRAIN bundles (local, free)...")
 
@@ -502,8 +531,14 @@ def run_one(
         )
         index.add(lab, emb, train_bundles_by_class[lab])
 
-    # ----- helper: predict list of bundles (batched embeddings + retrieval + optional LLM) -----
+    # ---- Predict bundles with retrieval fast-path and optional LLM fallback ----
     def predict_bundles(name: str, bundles: List[str]) -> List[str]:
+        """Predict labels for bundled texts from one evaluation split.
+
+        Retrieval scores provide the default decision rule; the LLM is queried
+        only when similarity evidence is missing or falls inside the uncertainty
+        margin defined in the configuration.
+        """
         if verbose:
             print(f"\n[LLM] Predicting {name}: {len(bundles)} bundles")
         preds: List[str] = []
@@ -515,10 +550,12 @@ def run_one(
                 print(f"[LLM] ⚠ WARNING: No bundles for {name}!")
             return preds
 
-        # Normalize once (not per item)
+        # Normalizing once keeps retrieval consistent while avoiding repeated
+        # string cleanup inside the prediction loop.
         bundles_norm = [_normalize_bundle(b) for b in bundles]
 
-        # Batch embed all queries once (GPU-friendly)
+        # Query embeddings are batched once to keep GPU use efficient and to
+        # separate embedding cost from per-item retrieval and prompting.
         q_embs = _embed_texts_local(
             embedder,
             bundles_norm,
@@ -544,6 +581,8 @@ def run_one(
             sims_a = np.array([sim for sim, _ in r_a], dtype=np.float32)
             sims_b = np.array([sim for sim, _ in r_b], dtype=np.float32)
 
+            # If one class has no retrieved support, the similarity comparison
+            # is not meaningful and the LLM is forced when available.
             force_llm = (sims_a.size == 0 or sims_b.size == 0)
 
             if force_llm:
@@ -553,18 +592,9 @@ def run_one(
                 b_agg = _aggregate_sims(sims_b, agg=cfg.score_agg)
                 score = float(a_agg - b_agg)
 
+            # The fast path is used only when retrieval yields a sufficiently
+            # decisive margin between the two class-specific scores.
             use_llm = llm_available and (force_llm or abs(score) < cfg.llm_uncertainty_margin)
-            
-            '''
-            if verbose:
-                print(
-                    f"[LLM-GATE] "
-                    f"a_mean={a_agg if sims_a.size>0 else 'EMPTY'} "
-                    f"b_mean={b_agg if sims_b.size>0 else 'EMPTY'} "
-                    f"score={score:.6f} "
-                    f"force_llm={force_llm}"
-                )
-            '''
 
             if use_llm:
                 if llm_client is None:
@@ -598,14 +628,17 @@ def run_one(
                 except Exception as e:
                     msg = str(e)
 
-                    # quota exhaustion / rate limit / billing issues
+                    # Once the API becomes unavailable, the run degrades
+                    # gracefully to embedding-only decisions rather than failing
+                    # mid-evaluation and mixing partial outputs.
                     if ("insufficient_quota" in msg) or ("Error code: 429" in msg) or ("429" in msg):
-                        llm_available = False  # <-- THIS IS THE KEY LINE
+                        llm_available = False
 
                         if verbose:
                             print("[LLM] ⚠ OpenAI unavailable → embedding-only for rest of this run")
 
-                        # embedding-only fallback for THIS item
+                        # This item is resolved with the same retrieval score
+                        # used by the normal fast path.
                         fast_calls += 1
                         pred = label_a if score >= 0 else label_b
                         preds.append(pred)
@@ -634,8 +667,13 @@ def run_one(
 
         return preds
 
-    # ----- bundle split helper (by true class) -----
+    # ---- Bundle one evaluation split by true class ----
     def bundle_split(name: str, texts: List[str], labels: List[str]) -> Tuple[List[str], List[str]]:
+        """Bundle one split while preserving ground-truth labels per bundle.
+
+        Validation and test bundles are created separately within each true
+        class so every bundled example remains label-pure during evaluation.
+        """
         lines_by_class: Dict[str, List[str]] = {label_a: [], label_b: []}
         for t, lab in zip(texts, labels):
             if lab not in lines_by_class:
@@ -660,7 +698,7 @@ def run_one(
 
         return bundles, bundle_labels
 
-    # ----- VAL -----
+    # ---- Validation ----
     X_val_bundles, y_val_bundles = bundle_split("VAL", X_val, y_val)
 
     if len(y_val_bundles) == 0:
@@ -680,7 +718,7 @@ def run_one(
         "val": evaluate_classifier(y_val_true, y_val_pred, labels=labels_sorted)
     }
 
-    # ----- TEST -----
+    # ---- Test ----
     if evaluate_test:
         X_test_bundles, y_test_bundles = bundle_split("TEST", X_test, y_test)
 
@@ -697,11 +735,10 @@ def run_one(
     return out
 
 
-# -----------------------------
-# Hyperparameter search (fixed split)
-# -----------------------------
+# ---- Hyperparameter search ----
 @dataclass(frozen=True)
 class Candidate:
+    """Wrapper for one candidate pipeline configuration."""
     cfg: RAGLLMConfig
 
 
@@ -714,10 +751,17 @@ def search(
     evaluate_test_for_all: bool = False,
     verbose: bool = True,
 ) -> Tuple[Candidate, EvalResult, EvalResult, List[Tuple[Candidate, EvalResult]]]:
+    """Select the best configuration on a fixed validation split.
+
+    Candidates are ranked by the requested validation metric, and the returned
+    tuple includes the best candidate, its validation result, its test result,
+    and all validation outcomes for later inspection.
+    """
     if metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("metric must be one of: f1_macro, f1_weighted, accuracy")
 
     def score(res: EvalResult) -> float:
+        """Extract the configured selection metric from one evaluation result."""
         return getattr(res, metric)
 
     candidates = list(candidates)

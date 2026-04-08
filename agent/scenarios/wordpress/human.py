@@ -1,23 +1,29 @@
+"""Manual WordPress scenario runner.
+
+This helper opens a root shell, snapshots log offsets, waits for a human to
+perform the scenario, and then collects only the newly generated logs.
+"""
+
 from ...utils import ShellSession, init_env_and_log_offsets, read_new_logs
 
 
 
 
-################################################ main ################################################
+# ---- Manual run ----
 if __name__ == "__main__":
 
 
-    # connect server, login-shell as root and configure sentinel, configure log-offset and environment-variable
+    # Prepare the shell state and log offsets before the manual intervention.
     session = ShellSession()
     try:
         session.connect_root_setSentinel()
         init_env_and_log_offsets(session)
         print(">> Ready. Perform your manual steps now. Press Enter when done (Ctrl+C to abort).")
 
-        # wait for the human to finish
+        # Pause until the human has completed the scenario steps.
         input("Human has finished?")
 
-        # extract new logs and write to file
+        # Persist only the log tail generated during the manual session.
         read_new_logs(session)
         print(">> Logs extracted to LOGS/.")
     finally:

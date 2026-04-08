@@ -1,4 +1,8 @@
-# bert_pipeline/pipeline.py
+"""BERT-style text classification pipeline with validation-based model selection.
+
+The key design choice is to rank candidate configurations on the validation split
+and evaluate the test split only once for the selected model.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +23,8 @@ from src.core.ml.eval import EvalResult, evaluate_classifier
 
 
 class TextDataset(Dataset):
+    """Minimal dataset wrapper for tokenized text batches and label tensors."""
+
     def __init__(self, encodings: Dict[str, torch.Tensor], labels: torch.Tensor):
         self.encodings = encodings
         self.labels = labels
@@ -34,6 +40,12 @@ class TextDataset(Dataset):
 
 @dataclass(frozen=True)
 class TransformerConfig:
+    """Training and evaluation settings for a transformer classifier.
+
+    Includes optimization, early-stopping, and device configuration used across
+    both single-run training and candidate search.
+    """
+
     model_name: str = "roberta-base"
     max_length: int = 128
     batch_size: int = 16
@@ -43,17 +55,19 @@ class TransformerConfig:
     warmup_ratio: float = 0.1
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
-    grad_clip_norm: float = 1.0  # helps stability
+    grad_clip_norm: float = 1.0  # Stabilizes fine-tuning on small or noisy splits.
 
     # ---- Early stopping ----
     early_stopping: bool = True
-    early_stop_metric: str = "f1_macro"  # one of: f1_macro, f1_weighted, accuracy
+    early_stop_metric: str = "f1_macro"  # One of: f1_macro, f1_weighted, accuracy.
     patience: int = 1
     min_delta: float = 0.0
-    eval_every: int = 2  # evaluate on val every N epochs
+    eval_every: int = 2  # Evaluate on validation every N epochs.
 
 
 def _set_seed(seed: int) -> None:
+    """Seed Python, NumPy, and PyTorch for reproducible training runs."""
+
     import random
     random.seed(seed)
     np.random.seed(seed)
@@ -70,7 +84,12 @@ def _encode_texts(
     desc: str,
     verbose: bool
 ) -> Dict[str, torch.Tensor]:
-    # Tokenizers are fast, but on huge corpora it still helps to show progress.
+    """Tokenize raw texts into padded tensors compatible with the model.
+
+    Uses chunked encoding only when progress reporting is enabled to keep large
+    tokenization jobs transparent without changing the resulting tensors.
+    """
+
     if not verbose:
         return tokenizer(
             texts,
@@ -80,7 +99,7 @@ def _encode_texts(
             return_tensors="pt",
         )
 
-    # Chunked encoding so tqdm can show progress.
+    # Chunking is only for progress visibility on large corpora.
     chunk = 2048
     enc_parts: Dict[str, List[torch.Tensor]] = {}
     for i in tqdm(range(0, len(texts), chunk), desc=desc, leave=False):
@@ -107,6 +126,8 @@ def _predict(
     desc: str = "predict",
     verbose: bool = True
 ) -> np.ndarray:
+    """Run batched inference and return predicted class ids as a NumPy array."""
+
     model.eval()
     preds: List[np.ndarray] = []
     it = dataloader if not verbose else tqdm(dataloader, desc=desc, leave=False)
@@ -131,6 +152,12 @@ def _evaluate_on_split(
     desc_prefix: str,
     verbose: bool,
 ) -> EvalResult:
+    """Evaluate a trained model on a labeled split and return classifier metrics.
+
+    Labels are mapped back to their original string representation before metric
+    computation so the evaluation stays aligned with the global label space.
+    """
+
     enc = _encode_texts(tokenizer, X_text, cfg.max_length, desc=f"{desc_prefix} tokenize", verbose=verbose)
     ds = TextDataset(enc, torch.tensor(y_ids))
 
@@ -158,19 +185,15 @@ def run_one(
     compute_test: bool = False,        # (NEW) Option A: don’t touch test during search
     return_state: bool = False,        # (NEW) let search keep weights to avoid retraining
 ) -> Dict[str, Any]:
-    """
-    Train ONE transformer configuration; evaluate on val (and optionally test).
+    """Train one transformer configuration and evaluate it on the validation split.
 
-    Returns always:
-      - "val": EvalResult
-
-    Optionally:
-      - "test": EvalResult                  (if compute_test=True)
-      - "state_dict": model.state_dict()    (if return_state=True)
-      - "meta": {label2id, id2label, labels_sorted} (if return_state=True)
+    Test evaluation is optional because search is designed to avoid touching the
+    test split until model selection is complete. Returns validation metrics and,
+    when requested, test metrics plus the trained state needed for reuse.
     """
     _set_seed(cfg.seed)
 
+    # ---- Prepare labels and fixed split views ----
     X = np.array([ex.text for ex in examples], dtype=object)
     y_str = np.array([ex.label for ex in examples], dtype=object)
 
@@ -193,7 +216,8 @@ def run_one(
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model_name)
 
-    # Tokenize TRAIN + VAL only (TEST is optional)
+    # ---- Build datasets and loaders ----
+    # Test tokenization stays separate so search does not leak work onto test data.
     train_enc = _encode_texts(tokenizer, X_train, cfg.max_length, desc="[BERT] tokenize train", verbose=verbose)
     val_enc = _encode_texts(tokenizer, X_val, cfg.max_length, desc="[BERT] tokenize val", verbose=verbose)
 
@@ -225,7 +249,7 @@ def run_one(
         label2id=label2id,
     ).to(cfg.device)
 
-    # FREEZE encoder (base model) for cheap search
+    # Optional encoder freezing can make broad searches cheaper, but is disabled here.
     '''
     for p in model.base_model.parameters():
         p.requires_grad = False
@@ -241,24 +265,23 @@ def run_one(
         num_training_steps=total_steps,
     )
 
-    # ------------------------------------------------------------------
-    # NEW: class-weighted loss computed from TRAIN split (imbalance-aware)
-    # ------------------------------------------------------------------
+    # ---- Loss construction ----
+    # We derive class weights from the training split only to avoid leaking label
+    # frequencies from validation or test into the optimization objective.
     num_classes = len(labels_sorted)
     counts = np.bincount(y_train, minlength=num_classes).astype(np.float32)
-    counts = np.clip(counts, 1.0, None)  # safety
+    counts = np.clip(counts, 1.0, None)  # Guards against degenerate empty counts.
 
-    # "balanced" weights: total / count_c alternative: total / (C * count_c)
+    # Inverse-frequency weighting keeps minority classes visible during fine-tuning.
     class_weights = counts.sum() / counts
 
-    # Optional: cap extreme weights if your minority class is tiny
+    # Optional safeguard if a very small class would dominate the loss.
     # class_weights = np.minimum(class_weights, 10.0)
 
     class_weights_t = torch.tensor(class_weights, dtype=torch.float32, device=cfg.device)
     loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights_t)
-    # ------------------------------------------------------------------
 
-    # Early stopping setup
+    # ---- Training with periodic validation checks ----
     use_es = bool(cfg.early_stopping)
     if use_es and cfg.early_stop_metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("TransformerConfig.early_stop_metric must be one of: f1_macro, f1_weighted, accuracy")
@@ -279,10 +302,10 @@ def run_one(
         for batch in epoch_bar:
             batch = {k: v.to(cfg.device) for k, v in batch.items()}
 
-            # NEW: compute weighted loss manually (do not pass labels to model)
-            labels = batch.pop("labels")          # [bs]
-            outputs = model(**batch)              # no internal loss
-            logits = outputs.logits               # [bs, num_classes]
+            # Loss is computed explicitly so the weighted criterion is always used.
+            labels = batch.pop("labels")
+            outputs = model(**batch)
+            logits = outputs.logits
             loss = loss_fn(logits, labels)
 
             loss.backward()
@@ -309,7 +332,7 @@ def run_one(
         if verbose:
             print(f"[BERT] epoch {epoch}/{cfg.epochs} done | avg_loss={(running / max(1, seen)):.4f}")
 
-        # Early stopping: evaluate VAL periodically
+        # Validation is intentionally periodic to reduce search cost on longer runs.
         if use_es and (epoch % max(1, cfg.eval_every) == 0):
             y_val_pred = _predict(model, val_loader, cfg.device, desc=f"[BERT] val @ epoch {epoch}", verbose=False)
             y_val_pred_str = np.array([id2label[i] for i in y_val_pred], dtype=object)
@@ -331,18 +354,18 @@ def run_one(
                         print(f"[BERT] early-stop: stopping at epoch {epoch} (best={best_score:.4f})")
                     break
 
-    # Restore best weights (if early stopping tracked any)
+    # Restore the best validation checkpoint before the final reported metrics.
     if use_es and best_state is not None:
         model.load_state_dict(best_state)
 
-    # Final VAL evaluation (from restored best weights)
+    # ---- Final evaluation and optional artifacts ----
     y_val_pred = _predict(model, val_loader, cfg.device, desc="[BERT] predict val", verbose=verbose)
     y_val_pred_str = np.array([id2label[i] for i in y_val_pred], dtype=object)
     val_res = evaluate_classifier(y_val_true_str, y_val_pred_str, labels=labels_sorted)
 
     out: Dict[str, Any] = {"val": val_res}
 
-    # Optionally evaluate TEST (disabled by default for Option A)
+    # Test evaluation stays opt-in so search can remain validation-only.
     if compute_test:
         test_res = _evaluate_on_split(
             model=model,
@@ -357,7 +380,7 @@ def run_one(
         )
         out["test"] = test_res
 
-    # Optionally return weights/meta so search can reuse and avoid retraining
+    # Returning the trained state lets search reuse the winning model directly.
     if return_state:
         out["state_dict"] = copy.deepcopy(model.state_dict())
         out["meta"] = {
@@ -369,11 +392,11 @@ def run_one(
     return out
 
 
-# -----------------------------
-# Hyperparameter search (Option A + keep weights)
-# -----------------------------
+# ---- Hyperparameter search ----
 @dataclass(frozen=True)
 class Candidate:
+    """Container for one transformer configuration considered during search."""
+
     cfg: TransformerConfig
 
 
@@ -386,6 +409,12 @@ def search(
     evaluate_test_for_all: bool = False,  # kept for API compatibility; ignored in Option A flow
     verbose: bool = True,
 ) -> Tuple[Candidate, EvalResult, EvalResult, List[Tuple[Candidate, EvalResult]]]:
+    """Select the best candidate on validation and test it exactly once.
+
+    The search loop never evaluates test metrics for intermediate candidates.
+    Instead, it keeps the winning model state and reuses it for a single final
+    test evaluation, matching the intended null-vs-true evaluation discipline.
+    """
 
     if metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("metric must be one of: f1_macro, f1_weighted, accuracy")
@@ -397,7 +426,7 @@ def search(
     if verbose:
         print(f"\n[BERT] Starting search over {len(candidates)} candidates...\n")
 
-    # We'll keep the best candidate + its trained weights (so no second training run)
+    # Keep the winning weights so the selected model can be tested without retraining.
     best: Optional[Candidate] = None
     best_val: Optional[EvalResult] = None
     best_state: Optional[Dict[str, torch.Tensor]] = None
@@ -416,7 +445,7 @@ def search(
             maxlen=cand.cfg.max_length,
         )
 
-        # IMPORTANT: Option A => do NOT compute test during candidate search
+        # Candidate ranking is validation-only by design.
         out = run_one(
             examples,
             split,
@@ -439,16 +468,17 @@ def search(
 
     assert best is not None and best_val is not None and best_state is not None and best_meta is not None
 
-    # ---- Evaluate TEST exactly once, reusing the best weights (NO retraining) ----
+    # ---- Final test evaluation ----
+    # Test is touched exactly once after selection to preserve a clean estimate.
     if verbose:
         print("\n[BERT] Evaluating best candidate on TEST set (reusing trained weights)...\n")
 
-    # Rebuild label mapping from the saved meta (must match training run)
+    # Reuse the exact label mapping from training so ids remain consistent.
     labels_sorted: List[str] = best_meta["labels_sorted"]
     id2label: Dict[int, str] = best_meta["id2label"]
     label2id: Dict[str, int] = best_meta["label2id"]
 
-    # Build test split arrays
+    # Build the held-out test split using the saved label mapping.
     X = np.array([ex.text for ex in examples], dtype=object)
     y_str = np.array([ex.label for ex in examples], dtype=object)
     y_ids = np.array([label2id[v] for v in y_str], dtype=np.int64)
@@ -482,5 +512,5 @@ def search(
     if verbose:
         print("\n[BERT] Search complete.\n")
 
-    # keep return signature identical
+    # Keep the public return signature unchanged.
     return best, best_val, best_test, all_val

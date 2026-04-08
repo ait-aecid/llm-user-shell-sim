@@ -1,4 +1,11 @@
-# Langgraph
+"""WordPress troubleshooting agent implemented as a LangGraph workflow.
+
+The runner alternates between reasoning and tool use, keeps recent context bounded,
+and periodically compresses older interaction history into a running summary so the
+agent can continue longer investigations without losing state.
+"""
+
+# ---------- LangGraph / LLM stack ----------
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
@@ -6,10 +13,10 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from langchain_openai import ChatOpenAI
 
-# Typing
+# ---------- Typing ----------
 from typing import TypedDict, Optional, Annotated, Sequence, List
 
-# configuration and utilities and standard lbraries
+# ---------- Configuration / utilities ----------
 #from config import API_KEY
 from dotenv import load_dotenv
 load_dotenv()
@@ -20,15 +27,16 @@ import signal
 import sys
 import random
 
-# additional tool code
+# ---------- Editing helper ----------
 from .vim_agent import run_file_edit_agent
 
-# global variables
+# ---------- Global state ----------
 global_session: ShellSession | None = None
 
 
 # ---------- Hyperparameters / Config ----------
 class AgentConfig:
+    """Static configuration for prompting, history compression, and tool limits."""
 
     # Metrik Prio 1: Least Number of Failures / Least Number of Recursions
 
@@ -88,6 +96,7 @@ class AgentConfig:
 
 # ---------- State Class ----------
 class AgentState(TypedDict):
+    """State carried through the decision and tool-execution loop."""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     history_summary: Optional[str]
     summarized_upto: int  # how many messages are already summarized
@@ -106,8 +115,9 @@ def get_session() -> ShellSession:
 
 def cleanup_session() -> None:
     """
-    Read remaining logs and close the global ShellSession if it exists.
-    Must NOT create a new session.
+    Flush remaining logs and close the shared shell session if it exists.
+
+    Cleanup is best-effort and must not create a fresh session during shutdown.
     """
     global global_session
 
@@ -115,7 +125,7 @@ def cleanup_session() -> None:
         return  # nothing to clean up
 
     try:
-        # best effort: don't let log-reading crash the program shutdown
+        # Preserve the last tool output without letting shutdown fail on logging.
         read_new_logs(global_session)
     except Exception as e:
         print(f"[cleanup_session] Failed to read logs: {e}")
@@ -129,8 +139,9 @@ def cleanup_session() -> None:
 
 def human_delay_for_cmd(cmd: str) -> None:
     """
-    Simulate a realistic human pause before typing/running a command.
-    Target range: ~5–10 seconds.
+    Simulate a short pause before issuing a shell command.
+
+    This is only used for realistic timing in logged runs and does not affect logic.
     """
 
     if not AgentConfig.DELAY_ACTIVE:
@@ -143,7 +154,7 @@ def human_delay_for_cmd(cmd: str) -> None:
 
     delay = base + per_char * len(cmd) + cognitive_delay + jitter
 
-    # clamp into slow, realistic range
+    # Keep delays plausible without letting outliers dominate the trace.
     delay = max(5, min(delay, 10.0))
 
     print(f"[human_delay_for_cmd] pausing for {delay:.2f}s (thinking/typing)…")
@@ -152,8 +163,9 @@ def human_delay_for_cmd(cmd: str) -> None:
 
 def human_delay_for_vim() -> None:
     """
-    Simulate a human preparing for a Vim editing session.
-    Target range: ~8–20 seconds.
+    Simulate a longer pause before entering a Vim editing session.
+
+    Editing typically includes rereading and planning, so this delay is wider.
     """
 
     if not AgentConfig.DELAY_ACTIVE:
@@ -165,7 +177,7 @@ def human_delay_for_vim() -> None:
 
     delay = random.gauss(mean, std_dev) + planning_delay
 
-    # realistic editing-prep delay range
+    # Bound the distribution to avoid implausibly short or long pauses.
     delay = max(8.0, min(delay, 20.0))
 
     print(f"[human_delay_for_vim] pausing for {delay:.2f}s (reading/editing)…")
@@ -173,8 +185,9 @@ def human_delay_for_vim() -> None:
 
 def invoke_with_retry(model, model_messages, max_retries: int = 3):
     """
-    Retry model.invoke on transient rate-limit errors (TPM/RPM).
-    Uses exponential backoff with jitter.
+    Invoke the model with retry logic for transient rate-limit failures.
+
+    Only throttling-style errors are retried; other exceptions are raised directly.
     """
     base_delay = 1.5  # seconds
     for attempt in range(max_retries + 1):
@@ -184,7 +197,7 @@ def invoke_with_retry(model, model_messages, max_retries: int = 3):
         except Exception as e:
             msg = str(e).lower()
 
-            # Detect rate limit / 429. (Works for both OpenAI + wrapped LangChain errors.)
+            # Match both provider-native and wrapped LangChain rate-limit errors.
             is_rate_limit = (
                 "rate limit" in msg
                 or "429" in msg
@@ -198,7 +211,7 @@ def invoke_with_retry(model, model_messages, max_retries: int = 3):
             if attempt >= max_retries:
                 raise  # give up
 
-            # Exponential backoff + jitter
+            # Jitter avoids synchronized retries when multiple runs are throttled.
             delay = base_delay * (2 ** attempt)
             delay = min(delay, 15.0)  # cap so it doesn't blow up
             delay += random.uniform(0.0, 0.75)  # jitter
@@ -212,45 +225,46 @@ def build_model_messages(
     state_messages: Sequence[BaseMessage],
     max_history: int = None,
 ) -> List[BaseMessage]:
-    """Build a clean, bounded chat history for the model, preserving context and valid tool results."""
+    """Construct the bounded message window passed to the main model.
+
+    The root task is preserved, recent context is kept within the history limit,
+    and orphaned tool outputs are removed so only valid assistant-tool pairs remain.
+    """
     all_msgs = list(state_messages)
 
-    # 1) Find the first HumanMessage (root user task)
+    # Keep the original task available even when the rolling window becomes short.
     root_human = None
     for m in all_msgs:
         if isinstance(m, HumanMessage):
             root_human = m
             break
 
-    # 2) Take the last `max_history` messages as a raw window
+    # Older context is carried by the running summary rather than the raw message list.
     recent = all_msgs[-max_history:]
 
-    # 3) Collect tool_call_ids from AI messages in this window
+    # Tool outputs are only meaningful if the triggering tool call is still visible.
     valid_tool_ids = set()
     for m in recent:
         if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
             for tc in m.tool_calls:
-                # LangChain tool_calls usually look like {"id": "...", "type": "tool_call", "function": {...}}
                 tid = tc.get("id") or tc.get("tool_call_id")
                 if tid:
                     valid_tool_ids.add(tid)
 
-    # 4) Filter out ToolMessages whose tool_call_id is not present in this window
     filtered: List[BaseMessage] = []
     for m in recent:
         if isinstance(m, ToolMessage):
             tcid = getattr(m, "tool_call_id", None)
             if tcid and tcid not in valid_tool_ids:
-                # Orphaned ToolMessage -> drop it
+                # Dropping orphaned tool results avoids invalid conversational state.
                 continue
         filtered.append(m)
 
-    # 5) (Optional but nice) drop *leading* ToolMessages even after filtering,
-    #    to avoid starting context with a random tool result.
+    # Avoid opening the context window with an unexplained tool result.
     while filtered and isinstance(filtered[0], ToolMessage):
         filtered.pop(0)
 
-    # 6) Make sure the root human is present (at the front)
+    # Reattach the original problem statement when it falls outside the raw window.
     if root_human is not None and root_human not in filtered:
         msgs = [root_human] + filtered
     else:
@@ -261,24 +275,24 @@ def build_model_messages(
 
 def maybe_summarize_history(state: AgentState, threshold: int = None) -> dict:
     """
-    Optionally update the running summary.
+    Refresh the running history summary once enough new messages accumulate.
 
-    Returns a dict with updated 'history_summary' and 'summarized_upto',
-    or {} if we decide not to summarize this step.
+    The summary acts as durable memory for older steps. Returns updated summary
+    fields, or an empty dict when no refresh is needed.
     """
     messages = list(state["messages"])
     old_summary = state.get("history_summary")
     summarized_upto = state.get("summarized_upto", 0)
 
-    # Only summarize if there are enough *new* messages
+    # Summarize incrementally so the same history is not repeatedly compressed.
     new_count = len(messages) - summarized_upto
     if threshold is not None and new_count < threshold:
         return {}
 
-    # Take only the new chunk
+    # Only the unseen suffix is folded into the running summary.
     new_chunk = messages[summarized_upto:]
 
-    # Turn messages into a simple transcript
+    # Convert structured messages into a compact transcript for summarization.
     transcript_lines = []
     for m in new_chunk:
         if isinstance(m, HumanMessage):
@@ -292,7 +306,7 @@ def maybe_summarize_history(state: AgentState, threshold: int = None) -> dict:
         transcript_lines.append(f"{role}: {m.content}")
     transcript = "\n".join(transcript_lines)
 
-    # Build prompt for summarizer
+    # The summarizer produces a replacement summary rather than an append-only log.
     prompt: List[BaseMessage] = [
         SystemMessage(
             content=(
@@ -331,7 +345,7 @@ def maybe_summarize_history(state: AgentState, threshold: int = None) -> dict:
     summary_msg = summary_model.invoke(prompt)
     new_summary = summary_msg.content.strip()
 
-    ### Print Summary
+    # Expose the compressed state for debugging and evaluation runs.
     print("Current Summary:")
     print("summarized history:", new_summary)
     print("summarized_upto:", len(messages))
@@ -362,12 +376,11 @@ def read_file(filename: str) -> str:
     print("------------------------- Entered read_file -------------------------")
     print("filename:", filename)
 
-    # Human-style delay
+    # Leave the path unquoted so shell expansions such as `~` still work.
     human_delay_for_cmd(f"cat {filename}")
 
     session = get_session()
 
-    # Do not quote filename so the shell can expand "~" to the home directory.
     cmd = f"cat {filename} 2>/dev/null"
 
     raw = session.run_cmd(cmd)
@@ -405,7 +418,7 @@ def next_command(cmd: str) -> str:
     print("------------------------- Entered next_command -------------------------")
     print("cmd:", cmd)
 
-    # --- Human-like delay ---
+    # Delay is only for realistic timing in recorded runs.
     human_delay_for_cmd(cmd)
 
     MAX_CHARS = AgentConfig.NEXT_COMMAND_MAX_CHARS
@@ -448,7 +461,7 @@ def use_browser(query: str) -> str:
 
     cmd = ["python", "browser_agent_WP.py", "--playwright"]
     
-    # Run the command, pass the query via stdin, and capture the output
+    # The browser helper runs out-of-process to keep Playwright state isolated.
     process = subprocess.Popen(
         cmd,
         stdin=subprocess.PIPE,
@@ -507,7 +520,7 @@ def use_vim(filename: str, query: str) -> str:
     print("Query:", query)
 
 
-    # --- Human-like delay ---
+    # Editing delays are modeled separately because they involve more planning.
     human_delay_for_vim()
 
     session = get_session()
@@ -525,11 +538,11 @@ def use_vim(filename: str, query: str) -> str:
         session.end_vim()
         return explanation
     except Exception as e:
-        # try to escape Vim and restore shell
+        # A failed edit should not leave the shared session stuck inside Vim.
         try:
             session._vim_escape_hatch()
         except Exception:
-            # don't let a failed escape completely hide the original error
+            # Preserve the original failure if recovery also fails.
             pass
 
         return (
@@ -564,12 +577,17 @@ model = ChatOpenAI(model=AgentConfig.MAIN_MODEL_NAME, temperature=AgentConfig.MA
 
 # ---------- Nodes ----------
 def decision_node(state: AgentState) -> AgentState:
+    """Run one reasoning step and produce the next assistant action.
 
-    # Increment
+    The node refreshes the running summary when needed, rebuilds the bounded
+    prompt context, and invokes the tool-enabled main model.
+    """
+
+    # Explicit step counting is useful for evaluation and debugging.
     decision_steps = state.get("decision_steps", 0) + 1
     print("Step:", decision_steps)
 
-    # 1) Maybe update the running summary
+    # Older dialogue is compressed so the prompt can stay bounded across long runs.
     summary_updates = maybe_summarize_history(state, AgentConfig.SUMMARY_THRESHOLD)
     history_summary = summary_updates.get("history_summary", state.get("history_summary"))
     summarized_upto = summary_updates.get("summarized_upto", state.get("summarized_upto", 0))
@@ -604,10 +622,10 @@ def decision_node(state: AgentState) -> AgentState:
 
     system_prompt = "".join(system_prompt_parts)
 
-    # 3) Build recent history window (smaller)
+    # The model sees a compact mix of summary memory and recent exact messages.
     chat_history = build_model_messages(state["messages"], max_history=AgentConfig.MAX_HISTORY_WINDOW)
 
-    # 4) Assemble messages for main model
+    # Assemble the prompt in the order: rules, summary, then recent interaction.
     model_messages: List[BaseMessage] = [SystemMessage(content=system_prompt)]
 
     if history_summary:
@@ -622,11 +640,10 @@ def decision_node(state: AgentState) -> AgentState:
 
     model_messages.extend(chat_history)
 
-    # 5) Call main model
+    # Retry logic only handles transient throttling failures.
     response = invoke_with_retry(model, model_messages)
 
 
-    # 6) Return new AI message + summary fields
     return {
         "messages": [response],
         "history_summary": history_summary,
@@ -643,8 +660,9 @@ graph.add_node("tool_node", tool_node)
 graph.add_edge(START, "decision_node")
     
 def route_decision(state: AgentState) -> str:
+    """Route from reasoning either to tool execution or back to another decision step."""
     last = state["messages"][-1]
-    # If the LLM asked to call a tool, go to the ToolNode
+    # Tool calls are executed by the ToolNode; otherwise the agent keeps reasoning.
     if isinstance(last, AIMessage) and getattr(last, "tool_calls", None):
         return "__tool__"
     return "__decide__"
@@ -659,7 +677,8 @@ graph.add_conditional_edges(
 )
 
 def route_after_tool(state: AgentState) -> str:
-    # Find the last ToolMessage (the most recent tool result)
+    """Route after tool execution, ending only when the terminate tool was called."""
+    # Termination is represented as a normal tool result so it fits the same loop.
     tool_msgs = [m for m in state["messages"] if isinstance(m, ToolMessage)]
     last_tool = tool_msgs[-1] if tool_msgs else None
 
@@ -682,8 +701,8 @@ app = graph.compile()
 
 if __name__ == "__main__":
 
-    # this should not be necessary    
     def handle_sigint(signum, frame):
+        """Release the shared shell session before propagating Ctrl+C."""
         print("\n[signal] SIGINT received, cleaning up...")
         cleanup_session()
         raise KeyboardInterrupt
@@ -691,8 +710,9 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_sigint)
 
     
-    result = None   # <-- ensures finally block can access it
-    get_session()  # guarantees env init + log offsets exist
+    result = None
+    # Initialize the shell up front so environment setup and log offsets are defined.
+    get_session()
 
     try:
         result = app.invoke(
@@ -711,7 +731,7 @@ if __name__ == "__main__":
 
     finally:
 
-        # ---- PRINT OUTPUT SAFELY ----
+        # ---------- Final reporting ----------
         print("Output:")
         if result is not None:
             for message in result["messages"]:
@@ -722,8 +742,8 @@ if __name__ == "__main__":
         else:
             print("[NO RESULT — the agent crashed before producing output]")
 
-        # Print number of recursions
+        # Decision-step count is a useful efficiency metric for agent runs.
         print(f"decision_node executions: {result.get('decision_steps', 0)}")
 
-        # ---- CLEAN UP SESSION ----
+        # ---------- Cleanup ----------
         cleanup_session()

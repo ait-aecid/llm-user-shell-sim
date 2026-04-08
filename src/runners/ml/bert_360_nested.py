@@ -1,4 +1,10 @@
 
+"""Nested evaluation runner for BERT-style log classification experiments.
+
+This script combines predefined outer validation/test group splits with a small
+loader and transformer search space, selecting configurations by validation
+performance only and recording held-out test results per outer split.
+"""
 
 from __future__ import annotations
 
@@ -20,10 +26,12 @@ from src.core.ml.benchmark import bench
 from src.ml_pipelines.bert_pipeline import Candidate, TransformerConfig, search
 
 
-# -------------------------
-# Args
-# -------------------------
 def parse_args():
+    """Parse command-line arguments for the nested BERT evaluation runner.
+
+    The interface is intentionally small because the outer split definitions and
+    candidate grids are controlled in code for reproducibility.
+    """
     p = argparse.ArgumentParser()
     p.add_argument(
         "--dataset",
@@ -39,9 +47,6 @@ def parse_args():
     return p.parse_args()
 
 
-# -------------------------
-# 1) LoadConfig grid
-# -------------------------
 @dataclass(frozen=True)
 class NamedLoad:
     name: str
@@ -49,20 +54,21 @@ class NamedLoad:
 
 
 def make_load_configs(dataset: str) -> List[NamedLoad]:
-    """
-    Keep this SMALL. BERT training is expensive.
-    Focus on: preprocess_mode + window_mode + window_size/stride.
+    """Build a compact grid of loader settings for the outer search.
+
+    The grid is intentionally conservative because each configuration is paired
+    with transformer tuning inside the nested evaluation.
     """
     base = dict(
         dataset=dataset,
         log_files=("audit.log",),
         prefix_with_log_type=False,
-        max_lines_per_file=None,     # bump up if you can afford it
+        max_lines_per_file=None,
     )
 
     out: List[NamedLoad] = []
 
-    # A) per-line (no windows)
+    # ---- Per-line inputs ----
     for preprocess_mode in ["soft"]:
         out.append(NamedLoad(
             name=f"none_{preprocess_mode}",
@@ -73,8 +79,9 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
             ),
         ))
 
-    # B) line windows (more context, fewer samples)
-    # compute time is limited and max_length can not be increased arbitrarly
+    # ---- Line windows ----
+    # Left disabled here because longer concatenated sequences increase runtime
+    # quickly while the transformer context length remains fixed.
     '''
     for preprocess_mode in ["soft", "aggressive"]:
         for ws in [10, 25]:
@@ -92,8 +99,9 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
                 ),
             ))
     '''
-    # C) CID windows (Drain3)
-    # Requires drain3 installed and drain3.ini present (your loader supports it)
+    # ---- CID windows ----
+    # CID windows trade raw line order for template-level structure and assume
+    # Drain3 is available in the local environment.
     for preprocess_mode in ["soft"]:
         for ws in [30]:
             st = max(1, ws // 2)
@@ -113,15 +121,11 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
     return out
 
 
-# -------------------------
-# 2) Candidate grid (BERT configs)
-# -------------------------
 def make_candidates() -> List[Candidate]:
-    """
-    Still reasonably small, but stronger:
-      - compares BERT vs RoBERTa
-      - slightly denser LR grid (adds 3e-5)
-      - adds a stronger regularization option (0.1)
+    """Return the transformer candidates considered in the inner search.
+
+    The candidate set is deliberately small so that each outer split remains
+    computationally feasible while still probing a meaningful model variant.
     """
     candidates: List[Candidate] = []
 
@@ -149,6 +153,7 @@ def make_candidates() -> List[Candidate]:
 
 
 def _safe_float(x: object) -> float:
+    """Convert a metric-like value to float and fall back to ``nan`` on failure."""
     try:
         return float(x)  # type: ignore[arg-type]
     except Exception:
@@ -156,6 +161,7 @@ def _safe_float(x: object) -> float:
 
 
 def _resolve_out_csv(path: str) -> str:
+    """Resolve the output CSV path and ensure its parent directory exists."""
     p = Path(path)
     if str(p.parent) == ".":
         p = Path("results") / p
@@ -163,14 +169,18 @@ def _resolve_out_csv(path: str) -> str:
     return str(p)
 
 
-# -------------------------
-# 3) Main
-# -------------------------
 def main():
+    """Run nested outer/inner evaluation and write one summary row per split.
+
+    For each predefined outer split, the script selects the loader/model pair by
+    validation performance only, then records the corresponding held-out test
+    metrics for downstream aggregation.
+    """
     args = parse_args()
     metric = args.metric
     out_csv = _resolve_out_csv(args.out_csv)
 
+    # ---- Set up search space and outer splits ----
     all_outer_splits = make_val_test_splits(args.dataset)
     outer_splits = all_outer_splits
     if args.limit_outer and args.limit_outer > 0:
@@ -188,12 +198,13 @@ def main():
 
     rows: List[Dict[str, object]] = []
 
+    # ---- Outer evaluation loop ----
     for outer_i, (val_groups, test_groups) in enumerate(outer_splits, 1):
         print("\n" + "=" * 100)
         print(f"[OUTER {outer_i:03d}/{len(outer_splits)}] val={val_groups} test={test_groups}")
         print("=" * 100)
 
-        # best_overall = (val_metric, named_load, best_candidate, best_val_res, best_test_res, (n_train,n_val,n_test))
+        # Track the winner for this outer split using validation performance only.
         best_overall = None
 
         for li, named in enumerate(load_grid, 1):
@@ -220,6 +231,8 @@ def main():
             y = np.array([e.label for e in examples], dtype=object)
             groups = np.array([e.group for e in examples], dtype=object)
 
+            # The outer split is group-based: validation and test groups are held
+            # out explicitly, and the remaining groups form the training pool.
             split = make_splits(
                 y,
                 groups=groups,
@@ -242,7 +255,8 @@ def main():
                 print(f"  ⚠ Too small split train={n_train} val={n_val} test={n_test}. Skipping.")
                 continue
 
-            # Inner search (hyperparams) — IMPORTANT: do NOT evaluate test for all candidates
+            # In the inner search, test evaluation is restricted to the selected
+            # candidate to avoid leaking test feedback into model selection.
             with bench(args.benchmark, f"search({named.name})"):
                 best_cand, best_val_res, best_test_res, _all_val = search(
                     examples,
@@ -258,7 +272,8 @@ def main():
 
             print(f"  best VAL {metric}={val_metric:.4f} | TEST {metric}={test_metric:.4f} | {best_cand.cfg}")
 
-            # Select ONLY by validation metric (nested CV correct)
+            # Nested evaluation requires that outer-level selection depends only
+            # on validation performance, never on the outer test result.
             if best_overall is None or val_metric > best_overall[0]:
                 best_overall = (val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test))
 
@@ -268,7 +283,8 @@ def main():
 
         val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test) = best_overall
 
-        # always record f1_macro + balanced_accuracy too (even if metric differs)
+        # Record a stable set of metrics so later analyses do not depend on the
+        # selection metric used for this particular run.
         row = {
             "outer_i": outer_i,
             "val_human": val_groups[0],
@@ -321,9 +337,7 @@ def main():
 
         rows.append(row)
 
-    # -------------------------
-    # Write CSV
-    # -------------------------
+    # ---- Write per-split results ----
     if not rows:
         print("\nNo rows collected; nothing to write.")
         return
@@ -334,9 +348,7 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    # -------------------------
-    # Quick summary (always show f1_macro + bal_acc)
-    # -------------------------
+    # ---- Aggregate summary ----
     test_f1s = np.array([r["test_f1_macro"] for r in rows], dtype=float)
     test_bals = np.array([r["test_balanced_accuracy"] for r in rows], dtype=float)
 

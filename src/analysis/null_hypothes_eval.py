@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Plot null-hypothesis permutation results as a vertical boxplot with jittered points
-and overlay the observed mean score from the correctly labeled run as a red dot.
+Visualize an observed run against a null distribution of permutation-based runs.
+
+The script aggregates one mean metric value per null CSV, computes an empirical
+p-value against the correctly labeled run, and renders the null distribution as a
+compact horizontal boxplot with jittered points.
 
 Usage:
     python plot_null_boxplot.py \
@@ -31,6 +34,11 @@ import pandas as pd
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for null-distribution visualization.
+
+    The interface supports different empirical p-value conventions and optional
+    figure export. Returns the populated argument namespace.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Create a boxplot of mean metric values from null-hypothesis CSV files "
@@ -125,6 +133,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    """Validate paths and ensure the p-value tail specification is unambiguous.
+
+    The script allows at most one explicit tail mode so the null comparison has
+    a single interpretation.
+    """
     if not args.null_dir.exists():
         raise FileNotFoundError(f"Null directory does not exist: {args.null_dir}")
     if not args.null_dir.is_dir():
@@ -140,6 +153,11 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def read_metric_mean(csv_path: Path, metric: str) -> float:
+    """Read one CSV and return the mean of the requested metric column.
+
+    Non-numeric entries are coerced to missing values and dropped. Raises if the
+    metric column is absent or if no valid numeric values remain.
+    """
     df = pd.read_csv(csv_path)
 
     if metric not in df.columns:
@@ -154,6 +172,11 @@ def read_metric_mean(csv_path: Path, metric: str) -> float:
 
 
 def collect_null_means(null_dir: Path, glob_pattern: str, metric: str) -> List[Tuple[Path, float]]:
+    """Collect per-file mean metric values for all null-hypothesis CSVs.
+
+    Files are processed in sorted order to keep summaries and plots stable across
+    runs. Returns `(path, mean_value)` pairs for downstream reporting.
+    """
     csv_paths = sorted(null_dir.glob(glob_pattern))
     if not csv_paths:
         raise FileNotFoundError(
@@ -174,11 +197,17 @@ def empirical_p_value(
     smaller_is_better: bool = False,
     two_sided: bool = False,
 ) -> float:
+    """Compute an empirical p-value from the null distribution.
+
+    The default is a right-tailed test, which matches score metrics where larger
+    values indicate better performance. A plus-one correction avoids zero p-values.
+    """
     n = len(null_values)
     if n == 0:
         raise ValueError("Null distribution is empty.")
 
     if two_sided:
+        # Center the two-sided test on the null mean rather than on zero.
         center = float(np.mean(null_values))
         obs_dev = abs(observed - center)
         count = int(np.sum(np.abs(null_values - center) >= obs_dev))
@@ -188,6 +217,7 @@ def empirical_p_value(
         count = int(np.sum(null_values <= observed))
         return (1 + count) / (n + 1)
 
+    # Default to the right tail for metrics such as F1, MCC, or balanced accuracy.
     count = int(np.sum(null_values >= observed))
     return (1 + count) / (n + 1)
 
@@ -204,15 +234,19 @@ def make_plot(
     seed: int,
     p_value: float,
 ) -> None:
+    """Render the null distribution and overlay the observed mean.
+
+    The plot is intentionally compact and single-panel because the goal is to
+    compare one observed score against one permutation-based null distribution.
+    """
     rng = np.random.default_rng(seed)
 
-    # Wide, short figure for a single horizontal distribution
+    # A single horizontal panel makes the observed-vs-null comparison immediate.
     fig, ax = plt.subplots(figsize=(10, 3))
 
-    # Put the single box at y=1
     y_pos = 1.0
 
-    # Horizontal boxplot, no duplicate outlier markers
+    # Outliers are already shown as jittered points, so boxplot fliers stay hidden.
     ax.boxplot(
         [null_values],
         positions=[y_pos],
@@ -226,7 +260,7 @@ def make_plot(
         capprops=dict(color="black", linewidth=1.0),
     )
 
-    # Jittered null points: x = metric value, y = slight random jitter
+    # Jitter only separates overlapping null means visually; it has no analytic meaning.
     y_jitter = rng.uniform(y_pos - 0.08, y_pos + 0.08, size=len(null_values))
     ax.scatter(
         null_values,
@@ -237,7 +271,6 @@ def make_plot(
         label="Null means",
     )
 
-    # Observed red dot
     ax.scatter(
         [observed_value],
         [y_pos],
@@ -248,7 +281,6 @@ def make_plot(
         label="Observed mean",
     )
 
-    # Reference line for observed mean
     ax.axvline(
         observed_value,
         color="red",
@@ -258,23 +290,19 @@ def make_plot(
         zorder=2,
     )
 
-    # Explicitly set y ticks BEFORE labels
     ax.set_yticks([y_pos])
     ax.set_yticklabels([xlabel])
 
     ax.set_xlabel(ylabel or metric)
 
-    # Fixed metric range for F1-style metrics
+    # This script assumes bounded score-like metrics on [0, 1].
     ax.set_xlim(0.0, 1.0)
 
-    # Tight y range so the plot doesn't look squished
     ax.set_ylim(y_pos - 0.35, y_pos + 0.35)
 
-    # No title by default
     if title is not None:
         ax.set_title(title)
 
-    # Annotation
     annotation_x = min(observed_value + 0.03, 0.97)
     annotation_y = y_pos + 0.12
     ax.text(
@@ -305,14 +333,22 @@ def make_plot(
     plt.close(fig)
 
 def main() -> None:
+    """Run the null-hypothesis summary and plotting workflow.
+
+    The script reduces each CSV to one mean metric value, compares the observed
+    run to the null distribution, prints summary statistics, and creates the plot.
+    """
+    # ---- Parse inputs and validate configuration ----
     args = parse_args()
     validate_args(args)
 
+    # ---- Load null and observed summary values ----
     null_results = collect_null_means(args.null_dir, args.glob, args.metric)
     null_values = np.array([value for _, value in null_results], dtype=float)
 
     observed_value = read_metric_mean(args.actual_csv, args.metric)
 
+    # Unless specified otherwise, treat larger scores as better and test the right tail.
     p_value = empirical_p_value(
         null_values,
         observed_value,
@@ -323,6 +359,7 @@ def main() -> None:
         two_sided=args.two_sided,
     )
 
+    # ---- Report null-distribution summary ----
     print("\n=== Summary ===")
     print(f"Metric:                {args.metric}")
     print(f"Number of null files:  {len(null_values)}")
@@ -341,6 +378,7 @@ def main() -> None:
     for csv_path, mean_value in null_results:
         print(f"  {csv_path.name}: {mean_value:.6f}")
 
+    # ---- Render figure ----
     make_plot(
         null_values=null_values,
         observed_value=observed_value,

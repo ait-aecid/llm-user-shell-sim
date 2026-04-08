@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Visualization helpers for pairwise distance analyses.
+
+The module turns symmetric pairwise comparison results into publication-ready
+heatmaps and MDS plots, with optional grouping of human and AI actors.
+"""
+
 from pathlib import Path
 import re
 from collections.abc import Callable, Sequence
@@ -21,6 +27,10 @@ DEFAULT_PLOT_DIR = Path("results/Plots/Statistic")
 
 
 def _slugify_filename(value: str) -> str:
+    """Convert a plot title into a filesystem-safe stem.
+
+    Returns a compact fallback name when the cleaned title would be empty.
+    """
     cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", value.strip())
     cleaned = re.sub(r"_+", "_", cleaned).strip("._")
     return cleaned or "plot"
@@ -34,6 +44,11 @@ def _resolve_output_path(
     output_dir: str | Path = DEFAULT_PLOT_DIR,
     extension: str = "pdf",
 ) -> Path | None:
+    """Resolve where a figure should be written.
+
+    Returns `None` when saving is disabled and otherwise normalizes either an
+    explicit path or a title-based default inside the plot directory.
+    """
     if save_path is False:
         return None
 
@@ -53,6 +68,10 @@ def _finalize_figure(
     save_path: str | Path | None,
     dpi: int,
 ) -> Path | None:
+    """Save, display, and close a figure in one place.
+
+    Returns the resolved output path when the figure is written to disk.
+    """
     output_path = Path(save_path) if save_path is not None else None
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,12 +86,17 @@ def group_labels_humans_first(
     *,
     ai_marker: str = "GPT",
 ) -> list[str]:
+    """Reorder labels so human entries precede AI entries.
+
+    Grouping labels this way makes the heatmap block structure easier to read.
+    """
     humans = [label for label in labels if ai_marker not in label]
     ais = [label for label in labels if ai_marker in label]
     return humans + ais
 
 
 def default_group_assigner(label: str, *, ai_marker: str = "GPT") -> str:
+    """Assign a label to the default Human or AI display group."""
     return "AI" if ai_marker in label else "Human"
 
 
@@ -82,8 +106,10 @@ def anonymize_actor_labels(
     ai_marker: str = "GPT",
     human_prefix: str = "Human",
 ) -> list[str]:
-    """
-    Keep AI labels unchanged and replace human labels with sequential aliases.
+    """Anonymize human labels while preserving AI identifiers.
+
+    Repeated human labels receive the same alias so pairwise structure remains
+    interpretable across plots.
     """
     anonymized: list[str] = []
     human_aliases: dict[str, str] = {}
@@ -109,11 +135,10 @@ def build_symmetric_distance_matrix(
     extract_pair: PairExtractor,
     diagonal_value: float = 0.0,
 ) -> np.ndarray:
-    """
-    Build a symmetric distance matrix from pairwise results.
+    """Construct a dense symmetric matrix from pairwise distance results.
 
-    extract_pair must return:
-        (label_1, label_2, distance)
+    `extract_pair` must return `(label_1, label_2, distance)`. The function
+    raises if labels are duplicated, unknown, or missing from the pairwise set.
     """
     label_list = list(labels)
     label_to_idx = {label: i for i, label in enumerate(label_list)}
@@ -168,25 +193,11 @@ def plot_distance_heatmap(
     output_dir: str | Path = DEFAULT_PLOT_DIR,
     dpi: int = 300,
 ) -> None:
-    """
-    Plot a polished distance heatmap.
+    """Render a symmetric distance matrix as a publication-style heatmap.
 
-    Parameters
-    ----------
-    distance_matrix:
-        Square distance matrix.
-    labels:
-        Labels for rows/columns.
-    upper_triangle_only:
-        If True, only the upper triangle is shown visually.
-    annotate_upper_triangle_only:
-        If True, numbers are shown only in the upper triangle.
-        This is usually best for symmetric matrices.
-    mask_diagonal:
-        If True, diagonal cells are hidden.
-    group_separator_index:
-        Optional index where a separator line is drawn, useful for
-        Human vs AI grouping after reordering labels.
+    The plot supports human/AI label anonymization and optional group
+    separators. For symmetric matrices, upper-triangle display is usually the
+    clearest presentation.
     """
     matrix = np.asarray(distance_matrix, dtype=float)
     labels = list(labels)
@@ -205,6 +216,7 @@ def plot_distance_heatmap(
     display_matrix = matrix.copy()
 
     if upper_triangle_only:
+        # The matrix is symmetric, so hiding the mirrored half reduces clutter.
         lower_mask = np.tril(np.ones_like(display_matrix, dtype=bool), k=-1)
         display_matrix[lower_mask] = np.nan
 
@@ -265,13 +277,13 @@ def plot_distance_heatmap(
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    # Soft white cell borders
+    # A light grid keeps cell boundaries legible without competing with the colormap.
     ax.set_xticks(np.arange(-0.5, n, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, n, 1), minor=True)
     ax.grid(which="minor", color=(1, 1, 1, 0.75), linestyle="-", linewidth=1.15)
     ax.tick_params(which="minor", bottom=False, left=False)
 
-    # Optional visual separator between groups, e.g. Human | AI
+    # This separator highlights block structure after labels are reordered by group.
     if group_separator_index is not None and 0 < group_separator_index < n:
         sep = group_separator_index - 0.5
         ax.axhline(sep, color="#c9c1b8", linewidth=2.2, zorder=3)
@@ -290,6 +302,7 @@ def plot_distance_heatmap(
                     continue
 
                 rgba = cmap_obj(norm(value))
+                # Switch text color by local luminance so annotations stay readable.
                 luminance = 0.2126 * rgba[0] + 0.7152 * rgba[1] + 0.0722 * rgba[2]
                 text_color = "white" if luminance < 0.48 else "#1f1a17"
 
@@ -327,11 +340,10 @@ def _add_group_ellipse(
     alpha: float = 0.16,
     zorder: int = 1,
 ) -> None:
-    """
-    Add a soft shaded ellipse around a group of 2D points.
+    """Draw a soft ellipse summarizing the spread of a point group.
 
-    For 2 points, the ellipse is estimated from the segment midpoint and spread.
-    For >=3 points, the ellipse is based on the covariance matrix.
+    With two points, the ellipse is derived from the connecting segment; with
+    larger groups, it is estimated from the covariance structure.
     """
     if len(points) < 2:
         return
@@ -397,6 +409,11 @@ def plot_mds_embedding(
     output_dir: str | Path = DEFAULT_PLOT_DIR,
     dpi: int = 300,
 ) -> tuple[np.ndarray, float]:
+    """Project a distance matrix into two dimensions with MDS and plot it.
+
+    Points can be grouped and styled separately for human versus AI actors.
+    Returns the 2D coordinates and the fitted stress value.
+    """
     labels = list(labels)
     display_labels = (
         anonymize_actor_labels(labels, ai_marker=ai_marker, human_prefix=human_prefix)
@@ -406,6 +423,7 @@ def plot_mds_embedding(
 
     mds_params = signature(MDS).parameters
 
+    # scikit-learn changed the MDS API; support both signatures without branching elsewhere.
     if "metric_mds" in mds_params:
         mds = MDS(
             metric="precomputed",
@@ -455,6 +473,7 @@ def plot_mds_embedding(
         for group_name, indices in groups.items():
             group_points = coords[indices]
             ellipse_color = group_colors.get(group_name, "#7d7d7d")
+            # Ellipses emphasize group-level separation without altering point positions.
             _add_group_ellipse(
                 ax,
                 group_points,

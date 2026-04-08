@@ -1,14 +1,22 @@
+"""Nextcloud scenario for an Apache vhost pointing at the wrong root.
+
+Removing the explicit ``DocumentRoot`` makes Apache fall back to the default
+web root, so the site appears present but clearly wrong.
+"""
+
 from ...utils import ShellSession
 
 VHOST = "/etc/apache2/sites-enabled/nextcloud.conf"
 
 
 def config(session):
+    """Remove the vhost's explicit ``DocumentRoot``.
+
+    Apache then serves its default root instead of the Nextcloud tree, which
+    produces a misleading but reproducible presentation failure.
     """
-    BREAK:
-    Remove the DocumentRoot directive from the Nextcloud vHost.
-    Apache will fall back to /var/www/html.
-    """
+    # Delete the directive rather than editing it in place so repeated runs
+    # remain idempotent.
     session.run_cmd(
         rf'''sudo sed -i -E \
         "/^[[:space:]]*DocumentRoot[[:space:]]+/d" \
@@ -19,9 +27,10 @@ def config(session):
 
 
 def fix(session):
-    """
-    FIX:
-    Restore the correct DocumentRoot for Nextcloud.
+    """Restore the expected vhost ``DocumentRoot`` for Nextcloud.
+
+    Existing directives are removed first so the repair does not accumulate
+    conflicting roots across repeated runs.
     """
     session.run_cmd(
         rf'''sudo sed -i -E \
@@ -58,7 +67,8 @@ def fix(session):
 
 
 
-# Problem: Nextcloud doesnot look right!
+# ---- Scenario entry point ----
+# Symptom: Nextcloud resolves to the wrong document root and looks broken.
 
 if __name__ == "__main__":
     session = ShellSession()

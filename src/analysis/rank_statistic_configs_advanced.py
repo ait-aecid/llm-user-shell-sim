@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Rank candidate statistic configurations across one or more result CSV files.
+
+The script applies a configurable hard filter, removes globally duplicated metric
+profiles, and reports the strongest configurations using multi-metric ranking.
+"""
 from __future__ import annotations
 
 import argparse
@@ -10,6 +15,11 @@ from typing import Any
 
 
 def _to_float(value: str | None) -> float:
+    """Parse a CSV cell as float and return `nan` for missing or invalid values.
+
+    This keeps downstream ranking logic numeric while treating malformed entries
+    as unavailable rather than failing the full analysis.
+    """
     if value is None:
         return float("nan")
     text = value.strip()
@@ -22,6 +32,11 @@ def _to_float(value: str | None) -> float:
 
 
 def _load_json_dict(raw: str | None) -> dict[str, Any]:
+    """Load a JSON object from a CSV cell and fall back to an empty dict.
+
+    Non-dict JSON payloads are ignored because hyperparameters are expected to be
+    stored as key-value mappings.
+    """
     if raw is None:
         return {}
     text = raw.strip()
@@ -32,16 +47,23 @@ def _load_json_dict(raw: str | None) -> dict[str, Any]:
 
 
 def _is_finite(value: float) -> bool:
+    """Return whether a numeric value is finite."""
     return math.isfinite(value)
 
 
 def _float_equal(a: float, b: float, *, rel_tol: float = 1e-12, abs_tol: float = 1e-12) -> bool:
+    """Compare finite floats with a tight tolerance for rank tie handling.
+
+    Non-finite values are treated as unequal because they are excluded from the
+    ranking calculations rather than assigned tied positions.
+    """
     if not (_is_finite(a) and _is_finite(b)):
         return False
     return math.isclose(a, b, rel_tol=rel_tol, abs_tol=abs_tol)
 
 
 def _safe_div(numerator: float, denominator: float) -> float:
+    """Divide two finite values and return `nan` when the ratio is undefined."""
     if not (_is_finite(numerator) and _is_finite(denominator)):
         return float("nan")
     if denominator == 0.0:
@@ -50,6 +72,11 @@ def _safe_div(numerator: float, denominator: float) -> float:
 
 
 def _compute_scores(row: dict[str, str]) -> dict[str, float]:
+    """Derive ranking metrics from one statistics row.
+
+    The derived scores emphasize separation between AI-human and within-group
+    means, plus overall cluster quality and effect-size strength.
+    """
     ai_ai_mean = _to_float(row.get("ai_ai_mean"))
     ai_human_mean = _to_float(row.get("ai_human_mean"))
     human_human_mean = _to_float(row.get("human_human_mean"))
@@ -80,6 +107,11 @@ def _compute_scores(row: dict[str, str]) -> dict[str, float]:
 
 
 def _load_rows(csv_path: Path) -> list[dict[str, Any]]:
+    """Load one statistics CSV and attach parsed fields plus derived scores.
+
+    Each returned row keeps the original summary values alongside normalized
+    metadata needed for filtering, deduplication, and reporting.
+    """
     rows: list[dict[str, Any]] = []
 
     with csv_path.open(newline="", encoding="utf-8") as handle:
@@ -118,12 +150,14 @@ def _load_rows(csv_path: Path) -> list[dict[str, Any]]:
 
 
 def _format_hyperparameters(hyperparameters: dict[str, Any]) -> str:
+    """Render hyperparameters in a stable order for readable console output."""
     if not hyperparameters:
         return "-"
     return ", ".join(f"{key}={value}" for key, value in sorted(hyperparameters.items()))
 
 
 def _format_float_or_na(value: float, fmt: str = ".6f") -> str:
+    """Format a finite float or return `nan` for missing numeric results."""
     if not _is_finite(value):
         return "nan"
     return format(value, fmt)
@@ -135,6 +169,11 @@ def _passes_hard_filter(
     require_significant: bool,
     alpha: float,
 ) -> bool:
+    """Check whether a row satisfies the minimum quality constraints.
+
+    The filter keeps only configurations where the between-group mean exceeds
+    both within-group means and the supporting separation statistics are positive.
+    """
     ai_ai_mean = row["ai_ai_mean"]
     ai_human_mean = row["ai_human_mean"]
     human_human_mean = row["human_human_mean"]
@@ -155,6 +194,7 @@ def _passes_hard_filter(
     if not all(_is_finite(v) for v in required):
         return False
 
+    # Require the cross-group signal to dominate both within-group baselines.
     if not (ai_human_mean > ai_ai_mean and ai_human_mean > human_human_mean):
         return False
     if not (silhouette > 0.0):
@@ -178,6 +218,7 @@ def _filter_rows(
     alpha: float,
     use_hard_filter: bool,
 ) -> list[dict[str, Any]]:
+    """Apply the optional hard filter and return the surviving rows."""
     if not use_hard_filter:
         return rows[:]
     return [
@@ -196,6 +237,11 @@ def _dedup_key_from_row(
     *,
     digits: int,
 ) -> tuple[float | str, float | str, float | str]:
+    """Build the rounded metric tuple used for global duplicate removal.
+
+    Deduplication is based on derived ranking behavior rather than raw metadata,
+    so equivalent score profiles collapse even across different source files.
+    """
     metric_names = (
         "normalized_mean_separation",
         "silhouette_overall",
@@ -218,6 +264,7 @@ def _remove_duplicate_rows(
     *,
     digits: int = 12,
 ) -> tuple[list[dict[str, Any]], int]:
+    """Drop rows with identical rounded metric tuples and report how many were removed."""
     seen: set[tuple[float | str, float | str, float | str]] = set()
     unique_rows: list[dict[str, Any]] = []
 
@@ -233,6 +280,11 @@ def _remove_duplicate_rows(
 
 
 def _minmax_normalize(rows: list[dict[str, Any]], metric_name: str) -> None:
+    """Min-max normalize one metric in place across the current candidate set.
+
+    When all finite values are identical, each finite row receives 1.0 so the
+    metric remains neutral rather than forcing an arbitrary spread.
+    """
     values = [
         row["scores"][metric_name]
         for row in rows
@@ -263,6 +315,11 @@ def _minmax_normalize(rows: list[dict[str, Any]], metric_name: str) -> None:
 
 
 def _assign_descending_ranks(rows: list[dict[str, Any]], metric_name: str) -> None:
+    """Assign competition ranks for one metric, with larger values ranked higher.
+
+    Equal values receive the same rank, and the next distinct value skips ahead
+    accordingly to preserve standard ranking semantics.
+    """
     ranked = [
         row for row in rows
         if _is_finite(row["scores"][metric_name])
@@ -291,6 +348,11 @@ def _assign_descending_ranks(rows: list[dict[str, Any]], metric_name: str) -> No
 
 
 def _compute_composite_scores(rows: list[dict[str, Any]]) -> None:
+    """Compute the weighted composite score from normalized metric values.
+
+    This score mixes raw metric scales after normalization and is retained as a
+    secondary view beside the rank-based recommendation.
+    """
     _minmax_normalize(rows, "normalized_mean_separation")
     _minmax_normalize(rows, "silhouette_overall")
     _minmax_normalize(rows, "cliffs_delta_mean")
@@ -307,6 +369,11 @@ def _compute_composite_scores(rows: list[dict[str, Any]]) -> None:
 
 
 def _compute_rank_aggregation(rows: list[dict[str, Any]]) -> None:
+    """Compute the primary rank-aggregation score across the three core metrics.
+
+    Lower values are better because the score is a weighted average of ranks
+    rather than normalized raw values.
+    """
     _assign_descending_ranks(rows, "normalized_mean_separation")
     _assign_descending_ranks(rows, "silhouette_overall")
     _assign_descending_ranks(rows, "cliffs_delta_mean")
@@ -331,6 +398,7 @@ def _rank_rows(
     top_k: int,
     reverse: bool = True,
 ) -> list[dict[str, Any]]:
+    """Return the top finite rows for one score, ordered for display."""
     ranked = [row for row in rows if _is_finite(row["scores"][metric_name])]
     ranked.sort(key=lambda row: row["scores"][metric_name], reverse=reverse)
     return ranked[:top_k]
@@ -341,6 +409,7 @@ def _print_row_details(
     *,
     display_score_name: str,
 ) -> None:
+    """Print the detailed metrics associated with one ranked configuration."""
     print(f"   source_csv: {row['source_csv']}")
     print(
         f"   means: ai_ai={_format_float_or_na(row['ai_ai_mean'])}, "
@@ -385,6 +454,7 @@ def _print_metric_block(
     top_k: int,
     reverse: bool = True,
 ) -> None:
+    """Print a ranked result block for one metric or aggregate score."""
     print(f"\n=== {label} ===")
     print(description)
 
@@ -404,6 +474,7 @@ def _print_metric_block(
 
 
 def main() -> None:
+    """Parse inputs, rank candidate configurations, and print the analysis summary."""
     parser = argparse.ArgumentParser(
         description=(
             "Rank hyperparameter configurations from one or more statistic CSV files using a "
@@ -467,6 +538,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # ---- Load data ----
     csv_paths = [Path(p) for p in args.csv_files]
 
     rows: list[dict[str, Any]] = []
@@ -482,6 +554,7 @@ def main() -> None:
 
     approach_names = sorted({row["approach"] for row in rows if row["approach"]})
 
+    # ---- Filter and deduplicate candidates ----
     filtered_rows = _filter_rows(
         rows,
         require_significant=args.require_significant,
@@ -518,9 +591,11 @@ def main() -> None:
         print("No configurations remain after duplicate removal.")
         return
 
+    # ---- Compute ranking scores ----
     _compute_composite_scores(deduplicated_rows)
     _compute_rank_aggregation(deduplicated_rows)
 
+    # ---- Report results ----
     print("CSV files:")
     for csv_path in csv_paths:
         print(f"  - {csv_path} ({rows_per_file[str(csv_path)]} rows)")

@@ -1,3 +1,10 @@
+"""Classical baseline pipeline for inter-event time window classification.
+
+The pipeline converts whitespace-separated timing windows into fixed-length
+numeric features, selects models on validation performance, and keeps test
+evaluation separate from model selection.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,6 +27,12 @@ from src.core.ml.eval import EvalResult, evaluate_classifier
 
 
 def _parse_window(text: str) -> np.ndarray:
+    """Parse one serialized inter-time window into a float array.
+
+    Empty or missing inputs are treated as zero-length windows. Returns a
+    one-dimensional `float32` array suitable for downstream padding.
+    """
+
     s = (text or "").strip()
     if not s:
         return np.zeros((0,), dtype=np.float32)
@@ -28,6 +41,13 @@ def _parse_window(text: str) -> np.ndarray:
 
 
 def _build_matrix(examples: List[Example], idx: np.ndarray, *, expected_len: Optional[int] = None) -> np.ndarray:
+    """Build a dense feature matrix for a subset of examples.
+
+    Windows are padded or truncated to a shared length so classical models can
+    operate on fixed-size inputs. Returns a `float32` matrix with one row per
+    selected example.
+    """
+
     rows: List[np.ndarray] = []
     for i in idx:
         v = _parse_window(examples[int(i)].text)
@@ -36,11 +56,11 @@ def _build_matrix(examples: List[Example], idx: np.ndarray, *, expected_len: Opt
     if not rows:
         return np.zeros((0, expected_len or 0), dtype=np.float32)
 
-    # Determine window length
+    # Use a single train-derived window length across all splits to avoid leakage.
     L = expected_len if expected_len is not None else max(len(r) for r in rows)
     X = np.zeros((len(rows), L), dtype=np.float32)
     for r_i, r in enumerate(rows):
-        # pad/truncate to L
+        # Classical baselines require a rectangular matrix even when raw windows vary.
         m = min(L, len(r))
         if m > 0:
             X[r_i, :m] = r[:m]
@@ -48,6 +68,12 @@ def _build_matrix(examples: List[Example], idx: np.ndarray, *, expected_len: Opt
 
 
 def build_model(model_name: str, params: Optional[Dict[str, Any]] = None, *, random_state: int = 42) -> BaseEstimator:
+    """Construct one sklearn classifier from a compact model identifier.
+
+    The helper centralizes defaults for baseline models and applies a shared
+    random state where supported. Returns an unfitted estimator.
+    """
+
     params = params or {}
 
     if model_name == "dummy_most_frequent":
@@ -74,14 +100,14 @@ def build_model(model_name: str, params: Optional[Dict[str, Any]] = None, *, ran
         return SGDClassifier(**{**base, **params})
 
     if model_name == "ridge":
-        # fast linear baseline; often strong on numeric features
+        # Keep a cheap linear baseline in the search space for dense numeric inputs.
         return RidgeClassifier(**{**params})
 
     if model_name == "knn":
         return KNeighborsClassifier(**{**params})
 
     if model_name == "gnb":
-        # Gaussian Naive Bayes (works on dense numeric)
+        # Included as a simple probabilistic baseline on dense features.
         return GaussianNB(**{**params})
 
     if model_name == "rf":
@@ -93,6 +119,8 @@ def build_model(model_name: str, params: Optional[Dict[str, Any]] = None, *, ran
 
 @dataclass(frozen=True)
 class Candidate:
+    """Configuration for one candidate model in the search space."""
+
     model_name: str
     model_params: Dict[str, Any]
     use_scaler: bool = True
@@ -104,9 +132,15 @@ def search(
     *,
     metric: str = "f1_macro",
     random_state: int = 42,
-    evaluate_test_for_all: bool = False,   # NEW
+    evaluate_test_for_all: bool = False,
     verbose: bool = True,
 ) -> Tuple[Candidate, EvalResult, EvalResult, List[Tuple[Candidate, EvalResult]]]:
+    """Evaluate candidate models and select the best one by validation score.
+
+    The search fixes feature dimensionality from the training split, compares
+    candidates on validation metrics, and returns the selected candidate together
+    with validation/test results and the full validation leaderboard.
+    """
 
     if metric not in {"f1_macro", "f1_weighted", "accuracy", "balanced_accuracy"}:
         raise ValueError("metric must be one of: f1_macro, f1_weighted, accuracy, balanced_accuracy")
@@ -116,17 +150,17 @@ def search(
 
     candidates = list(candidates)
 
-    # labels (strings)
+    # Keep label order explicit so metric computation is stable across runs.
     y = np.array([ex.label for ex in examples], dtype=object)
     labels_sorted = sorted(set(y.tolist()))
 
-    # Determine fixed window length from TRAIN (avoids peeking)
+    # Fix dimensionality from TRAIN only; validation/test must not influence preprocessing.
     train_rows = [_parse_window(examples[int(i)].text) for i in split.train_idx]
     if not train_rows or max(len(r) for r in train_rows) == 0:
         raise ValueError("No inter-time windows found in TRAIN. Check loader config/window sizes.")
     L = max(len(r) for r in train_rows)
 
-    # Build matrices
+    # ---- Build split-specific matrices ----
     X_train = _build_matrix(examples, split.train_idx, expected_len=L)
     X_val   = _build_matrix(examples, split.val_idx, expected_len=L)
     X_test  = _build_matrix(examples, split.test_idx, expected_len=L)
@@ -147,22 +181,22 @@ def search(
         model = Pipeline(steps)
         model.fit(X_train, y_train)
 
-        # --- VAL ---
+        # Validation drives model selection; test remains strictly downstream.
         y_val_pred = model.predict(X_val)
         val_res = evaluate_classifier(y_val, y_val_pred, labels=labels_sorted)
         all_val.append((cand, val_res))
 
-        # --- Optional TEST for all ---
+        # Optional per-candidate test evaluation is for analysis only, not selection.
         test_res: Optional[EvalResult] = None
         if evaluate_test_for_all:
             y_test_pred = model.predict(X_test)
             test_res = evaluate_classifier(y_test, y_test_pred, labels=labels_sorted)
 
-        # --- Track best by VAL ---
+        # Selection is based exclusively on the requested validation metric.
         if best_val is None or score(val_res) > score(best_val):
             best = cand
             best_val = val_res
-            # If we computed test for all, keep the best's test too
+            # Reuse the already-computed test result when available for the selected model.
             best_test = test_res if evaluate_test_for_all else None
 
         if verbose:
@@ -173,7 +207,7 @@ def search(
 
     assert best is not None and best_val is not None
 
-    # If we did NOT evaluate test for all, evaluate test once for best candidate
+    # Default path: touch the test split only once, after validation has selected the model.
     if best_test is None:
         steps = []
         if best.use_scaler:

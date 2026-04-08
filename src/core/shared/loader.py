@@ -1,3 +1,9 @@
+"""Load log data into `Example` objects for downstream ML experiments.
+
+The loader centralizes dataset resolution, optional line normalization, and
+alternative windowing schemes including template- and timing-based views.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -33,6 +39,11 @@ load_project_env()
 
 @dataclass(frozen=True)
 class LoadConfig:
+    """Configuration for dataset resolution, preprocessing, and windowing.
+
+    The same loader supports raw-text, template-based, and timing-based views
+    so experiments can switch representations without changing call sites.
+    """
     # named dataset under PROJECT_ROOT; ignored when root is set explicitly
     dataset: DatasetInput = "Nextcloud"
 
@@ -87,9 +98,15 @@ class LoadConfig:
     assignment_idx: Optional[int] = None
 
 def _default_data_root(dataset: DatasetInput | str) -> Path:
+    """Return the canonical aggregated-data directory for a dataset."""
     return experiment_aggregated_dir(dataset)
 
 def get_num_actor_label_assignments(dataset: DatasetInput | str) -> int:
+    """Return the number of non-observed human/AI label assignments.
+
+    This excludes the true assignment because the null setting only enumerates
+    alternative relabelings of the actor groups.
+    """
     human_groups, ai_groups = _default_groups(dataset)
     n_total = len(human_groups) + len(ai_groups)
     n_human = len(human_groups)
@@ -99,10 +116,12 @@ def get_num_actor_label_assignments(dataset: DatasetInput | str) -> int:
 
 
 def _default_groups(dataset: DatasetInput | str) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """Return the dataset-defined human and AI actor groups."""
     return discover_actor_groups(dataset)
 
 
 def _resolve_data_root(cfg: LoadConfig) -> Path:
+    """Resolve the data root from explicit config, environment, or dataset defaults."""
     if cfg.root is not None:
         return Path(cfg.root)
 
@@ -114,6 +133,11 @@ def _resolve_data_root(cfg: LoadConfig) -> Path:
 
 
 def _resolve_groups(cfg: LoadConfig) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """Resolve human/AI groups, optionally under a null relabeling.
+
+    When randomization is enabled, the true human assignment is excluded so
+    `assignment_idx` indexes only alternative human-vs-AI splits.
+    """
     default_human_groups, default_ai_groups = _default_groups(cfg.dataset)
 
     human_groups = cfg.human_groups if cfg.human_groups is not None else default_human_groups
@@ -127,6 +151,8 @@ def _resolve_groups(cfg: LoadConfig) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
 
     original_human = tuple(sorted(human_groups))
 
+    # Enumerate only null assignments so repeated evaluation never reuses the
+    # observed human/AI split as a baseline condition.
     all_assignments = [
         comb for comb in combinations(all_groups, n_human)
         if tuple(sorted(comb)) != original_human
@@ -151,12 +177,14 @@ def _resolve_groups(cfg: LoadConfig) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
 
 
 def resolve_human_ai_groups(cfg: LoadConfig) -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """Expose the resolved human/AI group split for external callers."""
     return _resolve_groups(cfg)
 
 # -----------------------------
 # Log type detection (filename-level)
 # -----------------------------
 def _infer_log_type(filename: str) -> str:
+    """Infer the coarse log type from the filename."""
     fn = filename.lower()
     if "audit" in fn:
         return "audit"
@@ -171,6 +199,7 @@ def _infer_log_type(filename: str) -> str:
 # Reading
 # -----------------------------
 def _read_lines(path: Path, *, encoding: str, errors: str, max_lines: Optional[int]) -> Iterable[Tuple[int, str]]:
+    """Yield `(line_number, text)` pairs from a file up to an optional limit."""
     with path.open("r", encoding=encoding, errors=errors) as f:
         for i, line in enumerate(f, start=1):
             if max_lines is not None and i > max_lines:
@@ -211,6 +240,7 @@ _PROC_PID_RE = re.compile(r"^(.+?)\[\d+\]$")
 # Type detection from content (optional)
 # -----------------------------
 def _detect_type_from_line(line: str) -> str:
+    """Infer a log type from line content when filename-based typing is unavailable."""
     s = line.lstrip()
     if s.startswith("type=") and "msg=audit(" in s:
         return "audit"
@@ -225,6 +255,11 @@ def _detect_type_from_line(line: str) -> str:
 # Preprocess variants
 # -----------------------------
 def _preprocess_generic(line: str, *, aggressive: bool) -> str:
+    """Normalize common volatile tokens in unstructured log lines.
+
+    Aggressive mode additionally masks standalone numbers to reduce variance
+    from IDs and counters.
+    """
     s = line.strip()
     if not s:
         return s
@@ -238,6 +273,11 @@ def _preprocess_generic(line: str, *, aggressive: bool) -> str:
 
 
 def _preprocess_audit(line: str, *, aggressive: bool) -> str:
+    """Normalize audit log lines while preserving their event structure.
+
+    Audit logs are highly number-volatile, so numeric masking is applied even
+    in the softer preprocessing modes.
+    """
     s = line.strip()
     if not s:
         return s
@@ -254,6 +294,11 @@ def _preprocess_audit(line: str, *, aggressive: bool) -> str:
 
 
 def _preprocess_syslog(line: str, *, aggressive: bool) -> str:
+    """Normalize syslog lines into a stable `<TS> <HOST> proc: msg` shape.
+
+    The parser falls back to generic preprocessing when the line does not
+    match the expected syslog structure.
+    """
     s = line.strip()
     if not s:
         return s
@@ -289,6 +334,11 @@ def _preprocess_syslog(line: str, *, aggressive: bool) -> str:
 
 
 def _preprocess_nextcloud(line: str, *, aggressive: bool) -> str:
+    """Normalize structured Nextcloud JSON logs into a compact text view.
+
+    Important fields are retained, while volatile tokens in URLs, messages,
+    and exceptions are masked to improve cross-run comparability.
+    """
     s = line.strip()
     if not s:
         return s
@@ -332,12 +382,10 @@ def _preprocess_nextcloud(line: str, *, aggressive: bool) -> str:
 
 
 def _preprocess_line(line: str, *, mode: PreprocessMode, assumed_type: Optional[str] = None) -> str:
-    """
-    mode:
-      - raw: return as-is (strip handled elsewhere)
-      - soft: normalize a few volatile tokens (paths, ips, hex; syslog keeps most nums)
-      - aggressive: more number masking (and stronger nextcloud/syslog masking)
-      - template: preprocessing happens BEFORE Drain3 (Drain3 gets normalized messages)
+    """Dispatch a line to the log-type-specific preprocessing routine.
+
+    Template mode intentionally reuses the soft normalization path so Drain3
+    clusters on lightly normalized messages rather than raw text.
     """
     if mode == "raw":
         return line
@@ -365,6 +413,7 @@ def _make_windows_from_lines(
     join_token: str = " <EOL> ",
     drop_last: bool = True,
 ) -> List[str]:
+    """Group consecutive text lines into fixed-size serialized windows."""
     if window_size <= 0:
         raise ValueError("window_size must be > 0")
     if stride is None:
@@ -392,6 +441,7 @@ def _make_windows_from_cids(
     prefix: str = "CID",
     drop_last: bool = True,
 ) -> List[str]:
+    """Serialize fixed-size windows of Drain3 cluster IDs."""
     if window_size <= 0:
         raise ValueError("window_size must be > 0")
     if stride is None:
@@ -418,6 +468,7 @@ _NEXTCLOUD_TIME_RE = re.compile(r'"time"\s*:\s*"([^"]+)"')
 _AUDIT_EVENT_RE = re.compile(r"audit\((\d+(?:\.\d+)?):(\d+)\)")
 
 def _extract_nextcloud_timestamps(lines: List[str]) -> List[datetime]:
+    """Extract and sort ISO timestamps from Nextcloud JSON log lines."""
     ts: List[datetime] = []
     for line in lines:
         m = _NEXTCLOUD_TIME_RE.search(line)
@@ -431,9 +482,10 @@ def _extract_nextcloud_timestamps(lines: List[str]) -> List[datetime]:
     return ts
 
 def _extract_auditlog_timestamps(lines: List[str]) -> List[datetime]:
-    """
-    Return ONE timestamp per audit event bundle (unique serial).
-    Uses the first-seen timestamp for each serial.
+    """Return one timestamp per unique audit event bundle.
+
+    Audit logs often emit multiple lines per event serial, so timing analysis
+    uses the first timestamp observed for each serial only.
     """
     seen: set[int] = set()
     ts: List[datetime] = []
@@ -458,9 +510,10 @@ def _extract_auditlog_timestamps(lines: List[str]) -> List[datetime]:
     return ts
 
 def _extract_syslog_timestamps(lines: List[str]) -> List[datetime]:
-    """
-    Tries ISO timestamps in first token. If your syslog is 'Jan 12 10:15:33 ...',
-    you'll need a strptime-based parser (we can add once you confirm format).
+    """Extract and sort syslog timestamps when the first token is ISO-formatted.
+
+    Non-ISO syslog formats are intentionally ignored here rather than guessed
+    to avoid mixing parsing assumptions into timing-based evaluations.
     """
     ts: List[datetime] = []
     for line in lines:
@@ -476,6 +529,7 @@ def _extract_syslog_timestamps(lines: List[str]) -> List[datetime]:
     return ts
 
 def _extract_generic_timestamps(lines: List[str]) -> List[datetime]:
+    """Extract sortable timestamps from generic logs using the first token."""
     ts: List[datetime] = []
     for line in lines:
         s = line.strip()
@@ -490,6 +544,7 @@ def _extract_generic_timestamps(lines: List[str]) -> List[datetime]:
     return ts
 
 def _extract_timestamps(lines: List[str], *, assumed_type: str) -> List[datetime]:
+    """Route timestamp extraction to the parser for the expected log type."""
     if assumed_type == "audit":
         return _extract_auditlog_timestamps(lines)
     if assumed_type == "nextcloud":
@@ -499,6 +554,7 @@ def _extract_timestamps(lines: List[str], *, assumed_type: str) -> List[datetime
     return _extract_generic_timestamps(lines)
 
 def _inter_event_diffs_seconds(timestamps: List[datetime]) -> np.ndarray:
+    """Convert ordered timestamps into non-negative inter-event gaps in seconds."""
     if len(timestamps) < 2:
         return np.array([], dtype=np.float32)
 
@@ -519,6 +575,7 @@ def _transform_diffs(
     clip_max: Optional[float],
     add_epsilon: float,
 ) -> np.ndarray:
+    """Apply clipping and scaling to inter-event gaps for text serialization."""
     x = diffs.astype(np.float32)
     if clip_max is not None:
         x = np.clip(x, 0.0, float(clip_max))
@@ -536,6 +593,7 @@ def _transform_diffs(
 # Drain3 integration
 # -----------------------------
 def _get_drain_ini(cfg: LoadConfig) -> Path:
+    """Resolve the Drain3 configuration file path and validate its presence."""
     if cfg.drain_ini_path is not None:
         p = Path(cfg.drain_ini_path)
     else:
@@ -546,6 +604,7 @@ def _get_drain_ini(cfg: LoadConfig) -> Path:
 
 
 def _create_template_miner(*, ini_path: Path):
+    """Create a non-persistent Drain3 miner from the configured ini file."""
     try:
         from drain3 import TemplateMiner
         from drain3.template_miner_config import TemplateMinerConfig
@@ -563,12 +622,10 @@ def _assign_templates_and_cids_global(
     miner,
     preprocessed_lines: List[str],
 ) -> Tuple[List[str], List[int]]:
-    """
-    Use a *shared* (global) TemplateMiner to assign cluster_ids to lines, and
-    return the resolved template string for each line.
+    """Assign Drain3 cluster IDs and recover the current template per line.
 
-    Important: Template strings can evolve as Drain3 sees more logs.
-    This function resolves the *current* template per assigned cluster id.
+    Template strings can evolve as additional logs are seen, so the templates
+    returned here reflect the miner state after the full sequence is processed.
     """
     cluster_ids: List[int] = []
     for line in preprocessed_lines:
@@ -584,6 +641,11 @@ def _assign_templates_and_cids_global(
 # Main loader
 # -----------------------------
 def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
+    """Load log files and convert them into labeled `Example` instances.
+
+    Depending on configuration, examples can represent raw lines, normalized
+    text, template IDs, or inter-event-time windows.
+    """
     root = _resolve_data_root(cfg)
     if not root.exists():
         raise FileNotFoundError(f"Data root not found: {root}")
@@ -635,7 +697,8 @@ def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
             if not raw_lines:
                 continue
 
-            # Preprocess each line
+            # Template mode mines on softly normalized text to reduce spurious
+            # clusters while keeping the message structure informative.
             if cfg.preprocess_mode == "raw":
                 pre_lines = [ln for _, ln in raw_lines]
             elif cfg.preprocess_mode == "soft":
@@ -647,7 +710,8 @@ def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
             else:
                 raise ValueError(f"Unknown preprocess_mode={cfg.preprocess_mode}")
 
-            # Drain3
+            # Keep one miner per log type so templates are shared across actors
+            # without forcing unrelated log formats into the same cluster space.
             templates: Optional[List[str]] = None
             cids: Optional[List[int]] = None
             if need_drain:
@@ -658,7 +722,7 @@ def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
                     miners_by_log_type[log_type] = miner
                 templates, cids = _assign_templates_and_cids_global(miner, pre_lines)
 
-            # Base texts
+            # Downstream windowing works on either normalized text or templates.
             if cfg.preprocess_mode == "template":
                 assert templates is not None
                 base_texts = templates
@@ -734,7 +798,8 @@ def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
                     )
 
             elif cfg.window_mode == "inter_times":
-                # Timestamps extracted from RAW lines (timestamps typically live in raw logs)
+                # Timing features must be extracted from raw log text because
+                # preprocessing may remove or rewrite the timestamp field.
                 raw_texts = [ln for _, ln in raw_lines]
                 ts = _extract_timestamps(raw_texts, assumed_type=log_type)
 
@@ -759,7 +824,8 @@ def load_examples(cfg: LoadConfig = LoadConfig()) -> List[Example]:
                         continue
                     win_texts.append(cfg.inter_time_join_token.join(f"{v:.6g}" for v in chunk))
 
-                # line_no is approximate (we don't map diffs back to exact raw lines here)
+                # A timing window spans multiple events, so `line_no` is only a
+                # coarse anchor to the source file rather than an exact mapping.
                 start_no = raw_lines[0][0] if raw_lines else None
                 for wtxt in win_texts:
                     examples.append(

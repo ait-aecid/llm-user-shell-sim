@@ -1,3 +1,10 @@
+"""Shared runner for a single group-structure evaluation pass.
+
+This module turns pairwise distance outputs into a distance matrix, evaluates
+human-vs-AI group separation under a chosen assignment mode, and optionally
+exports summary statistics and diagnostic plots.
+"""
+
 from typing import Callable, Any
 
 from src.core.stats.pairwise_group_stats import (
@@ -27,8 +34,18 @@ def evaluate_single_run(
     plot: bool = False,
     anonymize_humans: bool = False,
 ) -> dict:
+    """Run one evaluation pass from pairwise distances to summary outputs.
+
+    Labels are reordered to keep the human/AI block structure interpretable in
+    downstream statistics and plots. Returns the ordered labels, full distance
+    matrix, and computed group-level statistics.
+    """
+    # Keep the matrix layout consistent across runs so group-level structure is
+    # directly interpretable in both the statistics and the optional plots.
     ordered_labels = group_labels_humans_first(labels)
 
+    # Reconstruct the full symmetric matrix expected by the statistical
+    # analysis from the pairwise result records produced upstream.
     matrix = build_symmetric_distance_matrix(
         ordered_labels,
         pairwise_results,
@@ -39,6 +56,8 @@ def evaluate_single_run(
         ),
     )
 
+    # `assignment_mode` controls whether we evaluate the true human/AI split or
+    # a null/permuted assignment used for comparison or significance testing.
     group_stats = analyze_binary_group_structure(
         matrix,
         ordered_labels,
@@ -59,6 +78,8 @@ def evaluate_single_run(
         )
 
     if plot:
+        # The plotting path mirrors the evaluated ordering/assignment so visual
+        # diagnostics stay aligned with the reported statistics.
         plot_distance_heatmap(
             matrix,
             ordered_labels,

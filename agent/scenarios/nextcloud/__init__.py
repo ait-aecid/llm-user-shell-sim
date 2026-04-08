@@ -1,1 +1,1 @@
-"""Nextcloud scenario scripts."""
+"""Nextcloud break/fix scenarios and manual-run helpers."""

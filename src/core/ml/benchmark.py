@@ -1,4 +1,8 @@
-# core/benchmark.py
+"""Minimal benchmarking utilities for timed pipeline sections.
+
+The key detail is that CUDA work is synchronized before and after a measured
+block so reported timings reflect actual GPU execution rather than queued ops.
+"""
 
 from __future__ import annotations
 
@@ -16,44 +20,18 @@ def bench(
     *,
     meta_fn: Optional[Callable[[], Dict[str, Any]]] = None,
 ) -> Iterator[None]:
-    """
-    Lightweight reusable benchmarking context manager.
+    """Time a code block and print a compact benchmark line.
 
-    Example usage:
-
-        examples = []
-
-        with bench(args.benchmark, "load_examples",
-                   meta_fn=lambda: {"n": len(examples)}):
-            examples = load_examples(cfg)
-
-
-    Parameters
-    ----------
-    enabled:
-        If False → does nothing (zero overhead except one if-check)
-
-    name:
-        Name printed in output
-
-    meta_fn:
-        Optional function returning a dictionary with extra info
-        printed after timing.
-
-        Example:
-            lambda: {"n": len(examples)}
-
-    Output example:
-
-        [BENCH] load_examples: 3.214s | n=15233
+    When CUDA is available, the context synchronizes before and after the block
+    so timings include completed GPU work. Returns a no-op context if disabled.
     """
 
-    # Fast exit → almost zero overhead
+    # Keep the disabled path effectively free apart from the guard itself.
     if not enabled:
         yield
         return
 
-    # GPU operations are asynchronous → synchronize for accurate timing
+    # CUDA kernels are asynchronous, so wall-clock timing needs synchronization.
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
@@ -63,7 +41,6 @@ def bench(
         yield
 
     finally:
-
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 
@@ -81,6 +58,7 @@ def bench(
                     )
 
             except Exception:
+                # Benchmarking should never interfere with the measured code path.
                 meta = ""
 
         print(f"  [BENCH] {name}: {dt:.3f}s{meta}")

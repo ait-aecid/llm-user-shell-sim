@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Utilities for comparing pairwise distance structure across binary actor groups.
+
+The module supports both the true human/AI labeling and stratified null assignments
+that preserve group sizes for permutation-style comparisons.
+"""
+
 from itertools import combinations
 from math import comb
 from typing import Sequence, Optional
@@ -15,25 +21,10 @@ def get_num_binary_group_assignments(
     ai_marker: str = "GPT",
     exclude_true_assignment: bool = True,
 ) -> int:
-    """
-    Return the number of distinct stratified binary group assignments.
+    """Count distinct binary assignments that preserve the observed group sizes.
 
-    A distinct assignment is defined by which actors are assigned to the AI group.
-    Order inside the AI or human group does not matter.
-
-    Parameters
-    ----------
-    labels:
-        Actor labels.
-    ai_marker:
-        Substring used to identify true AI labels.
-    exclude_true_assignment:
-        If True, exclude the original true assignment from the count.
-
-    Returns
-    -------
-    int
-        Number of distinct indexed assignments.
+    Assignments are defined only by which labels fall into the AI group, so within-group
+    ordering does not matter. The true assignment can optionally be excluded.
     """
     labels = list(labels)
     true_groups = {
@@ -59,36 +50,10 @@ def infer_binary_groups(
     assignment_idx: Optional[int] = None,
     exclude_true_assignment: bool = True,
 ) -> dict[str, str]:
-    """
-    Split labels into two groups.
+    """Infer a binary human/AI grouping under a true or null assignment scheme.
 
-    assignment_mode:
-      - "true": use the real labeling
-          "ai" if ai_marker is contained in the label, else "human"
-      - "random_stratified": randomly assign the same number of AI and human labels
-          as in the true labeling, but ignore the actual actor identities
-      - "indexed_stratified": enumerate all distinct stratified assignments and
-          select one deterministically using assignment_idx
-
-    Parameters
-    ----------
-    labels:
-        Actor labels.
-    ai_marker:
-        Substring used to identify true AI labels.
-    assignment_mode:
-        One of "true", "random_stratified", or "indexed_stratified".
-    rng:
-        Optional NumPy random generator used for reproducible random assignments.
-    assignment_idx:
-        Required when assignment_mode="indexed_stratified".
-    exclude_true_assignment:
-        If True, the true assignment is removed from the indexed assignment list.
-
-    Returns
-    -------
-    dict[str, str]
-        Mapping label -> {"ai", "human"}.
+    Null assignments preserve the observed number of AI labels so comparisons stay
+    matched to the original class balance. Returns a mapping from label to group.
     """
     labels = list(labels)
 
@@ -110,6 +75,7 @@ def infer_binary_groups(
         if rng is None:
             rng = np.random.default_rng()
 
+        # Shuffle identities but keep the original AI-group size fixed.
         permuted = np.array(labels, dtype=object)
         rng.shuffle(permuted)
 
@@ -130,6 +96,7 @@ def infer_binary_groups(
             label for label, group in true_groups.items() if group == "ai"
         ))
 
+        # Sorting makes assignment_idx stable across runs and environments.
         all_assignments = [
             ai_comb
             for ai_comb in combinations(all_labels, n_ai)
@@ -163,11 +130,10 @@ def extract_group_distance_vectors(
     assignment_idx: Optional[int] = None,
     exclude_true_assignment: bool = True,
 ) -> dict[str, np.ndarray]:
-    """
-    Extract upper-triangle pairwise distances for:
-      - ai_ai
-      - human_human
-      - ai_human
+    """Split upper-triangle distances into within-AI, within-human, and cross-group sets.
+
+    The grouping can come from the true labels or from a stratified null assignment,
+    enabling downstream comparison of observed and randomized structure.
     """
     if distance_matrix.shape != (len(labels), len(labels)):
         raise ValueError("distance_matrix shape must match labels.")
@@ -205,6 +171,11 @@ def extract_group_distance_vectors(
 
 
 def summarize_vector(values: np.ndarray) -> dict[str, float]:
+    """Return a compact descriptive summary for a one-dimensional distance vector.
+
+    Empty inputs yield NaNs for location and spread so downstream reporting remains
+    explicit rather than silently dropping a comparison.
+    """
     if len(values) == 0:
         return {
             "n": 0.0,
@@ -222,10 +193,10 @@ def summarize_vector(values: np.ndarray) -> dict[str, float]:
 
 
 def cliffs_delta(x: np.ndarray, y: np.ndarray) -> float:
-    """
-    Nonparametric effect size in [-1, 1].
+    """Compute Cliff's delta for two samples.
 
-    Positive means x tends to be larger than y.
+    The statistic lies in [-1, 1]; positive values indicate that `x` tends to
+    contain larger values than `y`.
     """
     if len(x) == 0 or len(y) == 0:
         return float("nan")
@@ -246,6 +217,11 @@ def mannwhitney_with_effect_size(
     *,
     alternative: str = "two-sided",
 ) -> dict[str, float]:
+    """Run a Mann-Whitney test together with Cliff's delta.
+
+    This pairs significance testing with a nonparametric effect size so group
+    differences can be interpreted beyond the p-value alone.
+    """
     if len(x) == 0 or len(y) == 0:
         return {
             "u_statistic": float("nan"),
@@ -271,9 +247,10 @@ def silhouette_summary(
     assignment_idx: Optional[int] = None,
     exclude_true_assignment: bool = True,
 ) -> dict[str, float]:
-    """
-    Compute silhouette per sample using the precomputed distance matrix, then
-    report means for all samples, AI samples, and human samples.
+    """Summarize silhouette separation for a binary grouping on a distance matrix.
+
+    Uses the precomputed pairwise distances and reports mean silhouette values for
+    all samples together and for each group separately.
     """
     group_map = infer_binary_groups(
         labels,
@@ -291,6 +268,7 @@ def silhouette_summary(
     if len(np.unique(class_labels)) < 2:
         raise ValueError("Silhouette requires at least two groups.")
 
+    # Silhouette is evaluated on the same binary assignment used for the distance splits.
     values = silhouette_samples(distance_matrix, class_labels, metric="precomputed")
     ai_mask = class_labels == 1
     human_mask = class_labels == 0
@@ -312,25 +290,13 @@ def analyze_binary_group_structure(
     assignment_idx: Optional[int] = None,
     exclude_true_assignment: bool = True,
 ) -> dict[str, object]:
-    """
-    High-level summary for the three pair groups plus two Mann-Whitney tests:
-      - ai_human vs ai_ai
-      - ai_human vs human_human
+    """Assemble descriptive and inferential summaries for a binary group assignment.
 
-    Parameters
-    ----------
-    assignment_mode:
-        - "true": use real actor labels
-        - "random_stratified": randomly assign labels while preserving class counts
-        - "indexed_stratified": use the assignment at assignment_idx from the full
-          list of distinct stratified assignments
-    rng:
-        Optional NumPy random generator for reproducible random assignments.
-    assignment_idx:
-        Required for assignment_mode="indexed_stratified".
-    exclude_true_assignment:
-        If True, exclude the true assignment from the indexed assignment list.
+    The output combines distance summaries, silhouette separation, and two
+    Mann-Whitney comparisons that benchmark cross-group distances against each
+    within-group baseline.
     """
+    # ---- Distance partitions ----
     vectors = extract_group_distance_vectors(
         distance_matrix,
         labels,
@@ -345,6 +311,7 @@ def analyze_binary_group_structure(
     human_human = vectors["human_human"]
     ai_human = vectors["ai_human"]
 
+    # ---- Combined report ----
     return {
         "group_assignment": infer_binary_groups(
             labels,
@@ -378,6 +345,11 @@ def analyze_binary_group_structure(
 def print_binary_group_structure_report(
     result: dict[str, object],
 ) -> None:
+    """Print a compact text report for `analyze_binary_group_structure` output.
+
+    The report mirrors the analysis structure so descriptive summaries, silhouette
+    values, and inferential tests can be inspected together.
+    """
     summaries = result["group_summaries"]
     silhouette = result["silhouette"]
     tests = result["mannwhitney"]

@@ -1,4 +1,8 @@
-# cnn_pipeline/pipeline.py
+"""Character-level CNN pipeline for log classification experiments.
+
+The module keeps train/validation/test separation strict by deriving the
+character vocabulary and sequence length from the training split only.
+"""
 
 from __future__ import annotations
 
@@ -18,10 +22,10 @@ from src.core.ml.splits import Split
 from src.core.ml.eval import EvalResult, evaluate_classifier
 
 
-# -----------------------------
-# Dataset
-# -----------------------------
+# ---- Dataset ----
 class EncodedLogDataset(Dataset):
+    """Minimal dataset wrapper for padded character sequences and label ids."""
+
     def __init__(self, X: np.ndarray, y_ids: np.ndarray):
         self.X = torch.tensor(X, dtype=torch.long)
         self.y = torch.tensor(y_ids, dtype=torch.long)
@@ -33,10 +37,14 @@ class EncodedLogDataset(Dataset):
         return self.X[i], self.y[i]
 
 
-# -----------------------------
-# Model
-# -----------------------------
+# ---- Model ----
 class MultiKernelCharCNN(nn.Module):
+    """Character CNN with parallel convolutional kernels over one embedding table.
+
+    The architecture captures short- and medium-range character patterns and
+    returns class logits for each input sequence.
+    """
+
     def __init__(
         self,
         vocab_size: int,
@@ -67,29 +75,30 @@ class MultiKernelCharCNN(nn.Module):
         self.fc2 = nn.Linear(fc_dim, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, L)
-        x = self.embedding(x)      # (B, L, E)
-        x = x.permute(0, 2, 1)     # (B, E, L)
+        """Compute class logits for a batch of encoded character sequences."""
+
+        x = self.embedding(x)
+        x = x.permute(0, 2, 1)
 
         x3 = torch.relu(self.bn3(self.conv3(x)))
         x5 = torch.relu(self.bn5(self.conv5(x)))
         x7 = torch.relu(self.bn7(self.conv7(x)))
 
-        x3 = self.pool(x3).squeeze(-1)  # (B, F)
+        x3 = self.pool(x3).squeeze(-1)
         x5 = self.pool(x5).squeeze(-1)
         x7 = self.pool(x7).squeeze(-1)
 
-        x = torch.cat([x3, x5, x7], dim=1)  # (B, 3F)
+        x = torch.cat([x3, x5, x7], dim=1)
         x = self.dropout(torch.relu(self.fc1(x)))
-        logits = self.fc2(x)  # (B, num_classes)
+        logits = self.fc2(x)
         return logits
 
 
-# -----------------------------
-# Config
-# -----------------------------
+# ---- Config ----
 @dataclass(frozen=True)
 class CNNConfig:
+    """Configuration for encoding, optimization, and early stopping."""
+
     # text encoding
     max_len_cap: int = 512
     len_percentile: float = 95.0
@@ -113,7 +122,7 @@ class CNNConfig:
     # class imbalance
     use_class_weights: bool = True
 
-    # early stopping (NEW)
+    # early stopping
     early_stopping: bool = True
     early_stop_metric: str = "f1_macro"  # one of: f1_macro, f1_weighted, accuracy
     patience: int = 3                    # stop after this many non-improving evals
@@ -126,6 +135,8 @@ class CNNConfig:
 
 
 def _set_seed(seed: int) -> None:
+    """Seed Python, NumPy, and PyTorch to reduce run-to-run variation."""
+
     import random
     random.seed(seed)
     np.random.seed(seed)
@@ -134,20 +145,31 @@ def _set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
-# -----------------------------
-# Encoding utilities (train-only vocab/max_len)
-# -----------------------------
+# ---- Encoding utilities ----
 def _build_char_vocab(texts: List[str]) -> Dict[str, int]:
+    """Build a character vocabulary from training texts only.
+
+    Index 0 is reserved for padding and 1 for unseen characters at inference
+    time, so observed characters start at 2.
+    """
+
     chars = sorted({ch for t in texts for ch in t})
-    # 0 is PAD, 2..N are chars
     return {ch: i + 2 for i, ch in enumerate(chars)}
 
 
 def _encode(text: str, char2idx: Dict[str, int]) -> List[int]:
-    return [char2idx.get(ch, 1) for ch in text]  # UNK = 1
+    """Map a string to character ids, using 1 for out-of-vocabulary symbols."""
+
+    return [char2idx.get(ch, 1) for ch in text]
 
 
 def _choose_max_len(encoded_train: List[List[int]], *, percentile: float, cap: int) -> int:
+    """Choose a training-derived sequence length for padding and truncation.
+
+    The percentile-based heuristic keeps most examples intact while limiting
+    memory use; the result is capped and never smaller than one.
+    """
+
     lengths = np.array([len(x) for x in encoded_train], dtype=np.int64)
     if len(lengths) == 0:
         return 1
@@ -156,20 +178,22 @@ def _choose_max_len(encoded_train: List[List[int]], *, percentile: float, cap: i
 
 
 def _pad(seq: List[int], max_len: int) -> List[int]:
+    """Pad or truncate a sequence to the fixed model input length."""
+
     if len(seq) >= max_len:
         return seq[:max_len]
     return seq + [0] * (max_len - len(seq))
 
 
 def _encode_pad_many(texts: List[str], char2idx: Dict[str, int], max_len: int) -> np.ndarray:
+    """Encode a collection of texts and return a padded integer array."""
+
     enc = [_encode(t, char2idx) for t in texts]
     padded = [_pad(s, max_len) for s in enc]
     return np.array(padded, dtype=np.int64)
 
 
-# -----------------------------
-# Training / prediction
-# -----------------------------
+# ---- Training and prediction ----
 @torch.no_grad()
 def _predict(
     model: nn.Module,
@@ -179,6 +203,8 @@ def _predict(
     desc: str = "predict",
     show_progress: bool = True,
 ) -> np.ndarray:
+    """Run batched inference and return predicted class ids."""
+
     model.eval()
     preds = []
     for xb, _yb in tqdm(loader, desc=desc, leave=False, disable=not show_progress):
@@ -197,22 +223,23 @@ def run_one(
     verbose: bool = True,
     compute_test: bool = True,
 ) -> Dict[str, EvalResult]:
-    """
-    Train ONE CharCNN configuration; evaluate on val + test.
-    Returns: {"val": EvalResult, "test": EvalResult}
+    """Train one CNN configuration on a fixed split and evaluate it.
+
+    Vocabulary construction and sequence-length selection use only training
+    data to avoid leakage. Returns validation metrics and, optionally, test
+    metrics for the same trained model.
     """
     _set_seed(cfg.seed)
 
+    # ---- Prepare labels and split-specific views ----
     X_all = np.array([ex.text for ex in examples], dtype=object)
     y_str_all = np.array([ex.label for ex in examples], dtype=object)
 
-    # label mapping shared
     labels_sorted = sorted(set(y_str_all.tolist()))
     label2id = {lab: i for i, lab in enumerate(labels_sorted)}
     id2label = {i: lab for lab, i in label2id.items()}
     y_ids_all = np.array([label2id[v] for v in y_str_all], dtype=np.int64)
 
-    # split
     X_train = X_all[split.train_idx].tolist()
     y_train = y_ids_all[split.train_idx]
     X_val = X_all[split.val_idx].tolist()
@@ -226,9 +253,11 @@ def run_one(
             f"(train={len(X_train)}, val={len(X_val)}, test={len(X_test)})"
         )
 
-    # --- TRAIN-ONLY vocab + max_len ---
+    # ---- Encode with train-only statistics ----
+    # Restricting the vocabulary and max length to the training partition keeps
+    # the validation and test evaluations free of representation leakage.
     char2idx = _build_char_vocab(X_train)
-    vocab_size = len(char2idx) + 2   # PAD + UNK + chars
+    vocab_size = len(char2idx) + 2
 
     encoded_train = [_encode(t, char2idx) for t in X_train]
     max_len = _choose_max_len(encoded_train, percentile=cfg.len_percentile, cap=cfg.max_len_cap)
@@ -248,6 +277,7 @@ def run_one(
     val_loader = DataLoader(val_ds, batch_size=cfg.batch_size, shuffle=False)
     test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False)
 
+    # ---- Build model and optimization setup ----
     model = MultiKernelCharCNN(
         vocab_size=vocab_size,
         num_classes=len(labels_sorted),
@@ -260,7 +290,7 @@ def run_one(
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
 
-    # class weights (for CrossEntropy)
+    # Inverse-frequency weighting helps when label counts are imbalanced.
     if cfg.use_class_weights:
         counts = np.bincount(y_train, minlength=len(labels_sorted)).astype(np.float32)
         counts = np.maximum(counts, 1.0)
@@ -270,10 +300,11 @@ def run_one(
     else:
         criterion = nn.CrossEntropyLoss()
 
-    # Precompute val true strings once (for early stopping eval)
+    # Metrics are computed in label-string space because the shared evaluation
+    # helper expects the original class names.
     y_val_true_str = np.array([id2label[i] for i in y_val], dtype=object)
 
-    # Early stopping state (NEW)
+    # ---- Early stopping state ----
     use_es = bool(cfg.early_stopping)
     if use_es and cfg.early_stop_metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("CNNConfig.early_stop_metric must be one of: f1_macro, f1_weighted, accuracy")
@@ -282,7 +313,7 @@ def run_one(
     best_state: Optional[Dict[str, torch.Tensor]] = None
     bad = 0
 
-    # ---- Train with epoch + batch progress ----
+    # ---- Model training ----
     for epoch in range(1, cfg.epochs + 1):
         model.train()
         epoch_bar = tqdm(train_loader, desc=f"[CNN] epoch {epoch}/{cfg.epochs}", leave=False, disable=not verbose)
@@ -312,7 +343,8 @@ def run_one(
         if verbose:
             print(f"[CNN] epoch {epoch}/{cfg.epochs} done | avg_loss={(running / max(1, seen)):.4f}")
 
-        # ---- Early stopping: evaluate on VAL every eval_every epochs ----
+        # Validation is checked only at the configured cadence to keep training
+        # cost predictable during larger searches.
         if use_es and (epoch % max(1, cfg.eval_every) == 0):
             y_val_pred_ids = _predict(
                 model, val_loader, cfg.device, desc=f"[CNN] val @ epoch {epoch}", show_progress=False
@@ -338,11 +370,11 @@ def run_one(
                         print(f"[CNN] early-stop: stopping at epoch {epoch} (best={best_score:.4f})")
                     break
 
-    # Restore best weights (NEW)
+    # Restore the best validation checkpoint rather than the last epoch.
     if use_es and best_state is not None:
         model.load_state_dict(best_state)
 
-    # ---- VAL evaluation ----
+    # ---- Final evaluation ----
     y_val_pred = _predict(model, val_loader, cfg.device, desc="[CNN] predict val", show_progress=verbose)
 
     y_val_pred_str = np.array([id2label[i] for i in y_val_pred], dtype=object)
@@ -351,7 +383,8 @@ def run_one(
         "val": evaluate_classifier(y_val_true_str, y_val_pred_str, labels=labels_sorted),
     }
 
-    # ---- Optional TEST evaluation ----
+    # Test evaluation is optional so hyperparameter search can avoid repeated
+    # access to the held-out split.
     if compute_test:
         y_test_pred = _predict(model, test_loader, cfg.device, desc="[CNN] predict test", show_progress=verbose)
 
@@ -367,11 +400,11 @@ def run_one(
     return out
 
 
-# -----------------------------
-# Hyperparameter search
-# -----------------------------
+# ---- Hyperparameter search ----
 @dataclass(frozen=True)
 class Candidate:
+    """Wrapper for one hyperparameter configuration considered in search."""
+
     cfg: CNNConfig
 
 
@@ -384,6 +417,12 @@ def search(
     evaluate_test_for_all: bool = False,
     verbose: bool = True,
 ) -> Tuple[Candidate, EvalResult, EvalResult, List[Tuple[Candidate, EvalResult]]]:
+    """Select the best CNN configuration from a candidate set.
+
+    Model selection is based on validation performance only. The test split is
+    evaluated once for the selected configuration unless explicitly requested
+    for every candidate.
+    """
 
     if metric not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("metric must be one of: f1_macro, f1_weighted, accuracy")
@@ -416,7 +455,8 @@ def search(
             split,
             cand.cfg,
             verbose=verbose,
-            compute_test=False,   # ← IMPORTANT
+            # Avoid using the held-out test split during model selection.
+            compute_test=False,
         )
         val_res = out["val"]
         all_val.append((cand, val_res))

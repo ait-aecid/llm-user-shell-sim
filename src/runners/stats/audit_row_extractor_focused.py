@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Extract and compare actor-specific audit-log row distributions.
+
+The script builds per-actor distributions from selected audit record types and
+plots the most common patterns, pairs, or conditional value frequencies.
+"""
+
 import argparse
 import re
 from pathlib import Path
@@ -10,7 +16,15 @@ import matplotlib.pyplot as plt
 
 from src.core.stats.data_catalog import get_log_path, analysis_actors
 
+
+# ---- CLI configuration ----
+
 def parse_args() -> argparse.Namespace:
+    """Parse and validate CLI arguments for audit-row distribution analysis.
+
+    The validation enforces which auxiliary keys are required for pair and
+    conditional views. Returns a namespace ready for execution.
+    """
     parser = argparse.ArgumentParser(
         description=(
             "Plot actor-wise audit-log distributions for a selected audit record type. "
@@ -201,9 +215,10 @@ def parse_args() -> argparse.Namespace:
     return args
 
 def anonymize_actor_labels(actor_names: Sequence[str]) -> Dict[str, str]:
-    """
-    Map human actor names to Human 1, Human 2, ...
-    AI actors (GPT...) keep their original names.
+    """Anonymize human actor labels while leaving AI labels intact.
+
+    This keeps the plot readable without exposing human identifiers. Returns a
+    mapping from original actor names to display labels.
     """
     mapping: Dict[str, str] = {}
     human_idx = 1
@@ -222,6 +237,7 @@ QUOTED_OR_BARE_VALUE_PATTERN = r'(?:\"[^"]*\"|\S+)'
 
 
 def strip_outer_quotes(s: str) -> str:
+    """Remove one matching layer of surrounding quotes from a value."""
     s = s.strip()
     if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
         return s[1:-1]
@@ -229,8 +245,11 @@ def strip_outer_quotes(s: str) -> str:
 
 
 def is_ai_actor(label: str) -> bool:
+    """Return whether an actor label should be treated as an AI actor."""
     return "gpt" in label.lower()
 
+
+# ---- Row extraction ----
 
 def extract_rows_from_file(
     file_path: str | Path,
@@ -243,15 +262,10 @@ def extract_rows_from_file(
     keep_line: bool = True,
     strip_quotes: bool = True,
 ) -> List[Dict[str, Any]]:
-    """
-    Return row-aligned extracted data: one dict per matched log line.
+    """Extract key-value fields from matching audit-log lines.
 
-    Each row contains:
-      - "_lineno": 1-based line number in the file
-      - "_line": original line (if keep_line=True)
-      - extracted keys found in that line: {key: value, ...}
-
-    If require_all_keys=True, only rows containing ALL keys are kept.
+    Each returned dict represents one matched line and includes metadata such as
+    line number, plus the subset of requested keys that was present.
     """
     path = Path(file_path)
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -278,6 +292,8 @@ def extract_rows_from_file(
                     val = strip_outer_quotes(val)
                 found[k] = val
 
+        # Some analyses require complete records; others treat missing keys as
+        # informative and keep the partial row.
         if require_all_keys and any(k not in found for k in keys):
             continue
 
@@ -298,8 +314,10 @@ def conditional_value_counts(
     given_value: str,
     target_key: str,
 ) -> Counter:
-    """
-    Count target_key values among rows where given_key == given_value.
+    """Count target values after filtering rows by a fixed condition.
+
+    Only rows satisfying `given_key == given_value` contribute, which makes the
+    resulting counter a conditional empirical distribution over `target_key`.
     """
     return Counter(
         row[target_key]
@@ -314,9 +332,7 @@ def pair_counts(
     key1: str,
     key2: str,
 ) -> Counter:
-    """
-    Count co-occurring pairs (row[key1], row[key2]).
-    """
+    """Count co-occurring value pairs for two keys across extracted rows."""
     return Counter(
         (row[key1], row[key2])
         for row in rows
@@ -328,8 +344,10 @@ def row_presence_pattern(
     row: Dict[str, Any],
     keys: Sequence[str],
 ) -> Tuple[str, ...]:
-    """
-    Return tuple of keys present in this row, preserving key order.
+    """Encode which requested keys are present in a row.
+
+    The order is preserved so that patterns remain comparable across rows even
+    when the underlying dict iteration order is irrelevant.
     """
     return tuple(k for k in keys if k in row)
 
@@ -339,24 +357,26 @@ def presence_pattern_counts(
     *,
     keys: Sequence[str],
 ) -> Counter:
-    """
-    Count how often each key-presence pattern appears.
-    """
+    """Count how often each key-presence pattern occurs across rows."""
     return Counter(row_presence_pattern(row, keys) for row in rows)
 
 
 def _format_distribution_label(x: Any) -> str:
+    """Format plot labels for scalar values and tuple-valued outcomes."""
     if isinstance(x, tuple):
         return " | ".join(str(v) for v in x)
     return str(x)
 
 
 def _counter_to_prob_dict(counter: Counter) -> Dict[Any, float]:
+    """Normalize a counter into probabilities, returning an empty dict for zero mass."""
     total = sum(counter.values())
     if total == 0:
         return {}
     return {k: v / total for k, v in counter.items()}
 
+
+# ---- Distribution construction ----
 
 def build_distribution_for_rows(
     rows: List[Dict[str, Any]],
@@ -369,8 +389,10 @@ def build_distribution_for_rows(
     conditional_given_value: Optional[str] = None,
     conditional_target_key: Optional[str] = None,
 ) -> Counter:
-    """
-    Build one distribution Counter from one actor's rows.
+    """Build the requested empirical distribution for a single actor.
+
+    The available views correspond to different research questions: missingness
+    structure, value co-occurrence, or conditional behavior.
     """
     if distribution_name == "presence_pattern":
         return presence_pattern_counts(rows, keys=keys)
@@ -417,8 +439,10 @@ def collect_actor_distributions(
     conditional_given_value: Optional[str] = None,
     conditional_target_key: Optional[str] = None,
 ) -> Dict[str, Counter]:
-    """
-    Return {actor_label: Counter(...)} for selected actors.
+    """Extract rows and build one distribution per selected actor.
+
+    The result preserves actor labels as keys so downstream code can compare
+    distributions directly and plot them in a consistent order.
     """
     result: Dict[str, Counter] = {}
 
@@ -456,13 +480,17 @@ def select_actors(
     include_ais: Optional[int] = None,
     specific_actors: Optional[Sequence[str]] = None,
 ) -> List[Tuple[str, str | Path]]:
-    """
-    Select actors either by exact names or by number of human/AI actors.
+    """Select actors either explicitly or by human/AI quotas.
+
+    When counts are used, actors are taken in the input order so selection stays
+    aligned with the dataset's canonical actor ordering.
     """
     if specific_actors is not None:
         wanted = set(specific_actors)
         return [(label, path) for label, path in file_pairs if label in wanted]
 
+    # Human and AI subsets are split before truncation so the requested mix does
+    # not depend on how the two groups are interleaved upstream.
     humans = [(label, path) for label, path in file_pairs if not is_ai_actor(label)]
     ais = [(label, path) for label, path in file_pairs if is_ai_actor(label)]
 
@@ -485,6 +513,11 @@ def plot_actor_distributions(
     normalize: bool = True,
     save_path: Optional[str] = None,
 ) -> None:
+    """Plot grouped actor-wise distributions over a shared top-k vocabulary.
+
+    The vocabulary is chosen globally across actors so bar positions remain
+    comparable. Counts can be shown directly or normalized to probabilities.
+    """
     if not actor_distributions:
         print("No actor distributions to plot.")
         return
@@ -493,6 +526,8 @@ def plot_actor_distributions(
     for counter in actor_distributions.values():
         global_counter.update(counter)
 
+    # Using a shared vocabulary avoids giving each actor a different support,
+    # which would make the grouped comparison visually misleading.
     vocab = [item for item, _ in global_counter.most_common(top_k)]
     if not vocab:
         print("No values to plot.")
@@ -544,6 +579,7 @@ def plot_actor_distributions(
 
 
 def get_mode_config(mode: str) -> Tuple[Pattern[str], List[str]]:
+    """Return the record prefix and keys associated with an audit-log mode."""
     if mode == "execve":
         return re.compile(r"^type=EXECVE\s+msg=audit\("), ["a0", "a1", "a2", "a3", "a4", "a5", "argc"]
     if mode == "path":
@@ -557,6 +593,8 @@ def get_mode_config(mode: str) -> Tuple[Pattern[str], List[str]]:
         return re.compile(r"^type=SOCKADDR\s+msg=audit\("), ["saddr"]
     raise ValueError(f"Unknown mode: {mode}")
 
+
+# ---- Script entry point ----
 
 if __name__ == "__main__":
     args = parse_args()

@@ -6,35 +6,48 @@ import json
 from typing import Optional, Any, Dict, List
 from contextlib import AsyncExitStack
 
+"""Browser runner for WordPress tasks via MCP tools and the OpenAI chat API.
+
+The script constrains the agent to `wordpress.local`, compresses verbose page
+snapshots before reinserting them into context, and preserves tool-call history
+under a fixed message budget.
+"""
+
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from openai import OpenAI  # OpenAI SDK
 from dotenv import load_dotenv
 
-# ---------- Hyperparameters / Config ----------
+# ---- Configuration ----
 DEBUG_FLAG = True
 MODEL = "gpt-4.1-mini"
 TEMPERATURE = 0.1
 
 
 
-# --- Load .env BEFORE reading env vars ---
+# ---- Environment ----
 load_dotenv()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", MODEL)
 
-# ---------- Token + snapshot helpers (unchanged) ----------
+# ---- Snapshot and token helpers ----
 
 def _est_tokens(text: str) -> int:
-    """Very rough token estimate: ~1 token per 4 chars."""
+    """Estimate token count from character length.
+
+    This is intentionally coarse and is used only for context-budget trimming.
+    Returns a lower-bounded positive estimate.
+    """
     return max(1, len(text) // 4)
 
 def _truncate_text(s: str, max_chars: int) -> str:
+    """Cap long strings while preserving a visible truncation marker."""
     if len(s) <= max_chars:
         return s
     return s[:max_chars] + " …"
 
 def _extract_yaml_block(full_text: str) -> str | None:
+    """Extract the fenced YAML snapshot block if one is present."""
     start = full_text.find("```yaml")
     if start == -1:
         return None
@@ -54,6 +67,11 @@ def _compact_snapshot_yaml(
     keep_max_lines: int = 1200, # param
     line_char_cap: int = 280 # param
 ) -> str:
+    """Keep the most informative snapshot lines for reinjection into context.
+
+    The filter favors common accessibility roles and preserves a small prefix of
+    the snapshot so that page-level context is not lost.
+    """
     lines = yaml_text.splitlines()
     kept: List[str] = []
     for ln in lines:
@@ -64,7 +82,11 @@ def _compact_snapshot_yaml(
     return "\n".join(kept)
 
 def _summarize_snapshot_text(full_text: str, max_chars: int = 3000) -> str: # param
-    """Return URL/Title header + compacted YAML section."""
+    """Summarize a verbose page snapshot into a compact context string.
+
+    The summary retains URL and title metadata plus a reduced YAML snapshot.
+    Returns a truncated text block suitable for tool-message history.
+    """
     url = None
     title = None
     for line in full_text.splitlines():
@@ -88,13 +110,14 @@ def _summarize_snapshot_text(full_text: str, max_chars: int = 3000) -> str: # pa
     return _truncate_text(combined, max_chars)
 
 def _mcp_content_to_text_blocks(content_list: List[Any], include_full_snapshots: bool = False) -> List[str]:
-    """
-    Similar to the Anthropic normalizer but return plain strings for OpenAI tool replies.
-    We'll JSON-serialize these when sending back via the 'tool' role message.
+    """Normalize MCP tool output into plain text blocks for OpenAI tool replies.
+
+    When a tool response embeds a page snapshot, the function prefers a compact
+    actionable result over the raw snapshot to avoid wasting context budget.
     """
     out: List[str] = []
 
-    # helper: extract the "### Result ..." blob if present (fenced or unfenced)
+    # Prefer the explicit tool result over the snapshot dump when both are present.
     def _extract_result_blob(txt: str) -> str | None:
         m = re.search(
             r"### Result\s+```?json?\s*(.*?)```|### Result\s*([\s\S]*?)\n###",
@@ -140,17 +163,17 @@ def _mcp_content_to_text_blocks(content_list: List[Any], include_full_snapshots:
 
 
 def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: int = 6000) -> List[Dict[str, Any]]:
-    """
-    Keep most recent content while staying under a rough token budget.
-    - Always keep system messages (untrimmed, at the front).
-    - Treat an assistant tool-call turn + its following tool replies as an atomic bundle.
-    - Trim from the end by whole bundles so tool messages always have their parent.
+    """Trim chat history while preserving the structure required for tool use.
+
+    System and user messages are kept, while assistant tool-call turns and their
+    tool replies are treated as atomic bundles. Returns a shorter message list
+    that remains valid for the next OpenAI request.
     """
     # 0) keep system messages untouched
     system_user_msgs = [m for m in messages if m.get("role") == "system" or m.get("role") == "user"]
     non_system = [m for m in messages if m.get("role") not in {"system", "user"}]
 
-    # helper: rough token count of one message
+    # A rough count is sufficient here because we only need stable trimming behavior.
     def _msg_tokens(msg: Dict[str, Any]) -> int:
         parts: List[str] = []
         c = msg.get("content")
@@ -167,7 +190,7 @@ def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: i
         # include a small header overhead
         return sum(_est_tokens(p) for p in parts) + 12
 
-    # 1) Build bundles (oldest -> newest)
+    # Tool replies must stay attached to the assistant turn that requested them.
     bundles: List[List[Dict[str, Any]]] = []
     i = 0
     n = len(non_system)
@@ -210,6 +233,7 @@ def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: i
     flat_kept = [m for bundle in kept for m in bundle]
     return system_user_msgs + flat_kept
 
+# ---- Agent prompt ----
 SYSTEM_PROMPT = (
     "WordPress is a self-hosted CMS web application with a public site and an admin interface (wp-admin).\n"
     "You are an automated web assistant restricted to ONLY interact with the website 'wordpress.local'.\n"
@@ -228,7 +252,7 @@ SYSTEM_PROMPT = (
     "Adjust the selector or verify using the snapshot.\n"
 )
 
-# ----------------- Client (OpenAI) -----------------
+# ---- OpenAI/MCP client ----
 
 class MCPClient:
     def __init__(self):
@@ -239,6 +263,7 @@ class MCPClient:
         self.write = None
 
     async def connect_via_command(self, command: str, args: list[str] | None = None, env: dict | None = None):
+        """Connect to an MCP server exposed by an external command."""
         server_params = StdioServerParameters(command=command, args=args or [], env=env)
         stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
         self.stdio, self.write = stdio_transport
@@ -249,6 +274,7 @@ class MCPClient:
             print("\nConnected to server with tools:", [t.name for t in (resp.tools or [])])
 
     async def connect_to_server(self, server_script_path: str):
+        """Launch a local MCP server script and initialize a session."""
         is_python = server_script_path.endswith(".py")
         is_js = server_script_path.endswith(".js")
         if not (is_python or is_js):
@@ -264,7 +290,7 @@ class MCPClient:
             print("\nConnected to server with tools:", [t.name for t in (resp.tools or [])])
 
     def _mcp_tools_to_openai(self, tools_resp) -> List[Dict[str, Any]]:
-        """Convert MCP tool descriptions to OpenAI function-calling schema."""
+        """Translate MCP tool metadata into the OpenAI function-calling schema."""
         out = []
         for t in (tools_resp.tools or []):
             out.append({
@@ -278,6 +304,12 @@ class MCPClient:
         return out
 
     async def process_query(self, query: str) -> str:
+        """Run a single query through the OpenAI-tool loop until completion.
+
+        The loop alternates between model calls and MCP tool execution, while
+        trimming history to keep the interaction within a fixed input budget.
+        Returns the final plain-text assistant response.
+        """
         # 1) Build OpenAI tools list
         resp = await self.session.list_tools()
         openai_tools = self._mcp_tools_to_openai(resp)
@@ -291,7 +323,7 @@ class MCPClient:
 
         for _ in range(20):
 
-            # Trim before each call
+            # Trim before each round so earlier snapshots do not crowd out new actions.
             messages = _trim_messages_to_budget(messages, max_input_tokens=6000)
 
             completion = self.openai.chat.completions.create(
@@ -342,12 +374,13 @@ class MCPClient:
                         print("\n\n")
 
                     text_blocks = _mcp_content_to_text_blocks(result.content, include_full_snapshots=False)
-                    # Serialize to a compact JSON string for the tool message
+                    # Tool messages are serialized as JSON strings because the Chat Completions
+                    # API expects plain content rather than structured MCP objects here.
                     tool_content = json.dumps(text_blocks, ensure_ascii=False)
                 except Exception as e:
                     tool_content = json.dumps([f"Tool error: {e}"], ensure_ascii=False)
 
-                # Tool result goes in a 'tool' role message linked by tool_call_id
+                # Preserve tool_call_id so the model can associate each result with its request.
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call.id,
@@ -357,6 +390,7 @@ class MCPClient:
         return "\n".join(final_text) if final_text else "(no text response)"
 
     async def chat_loop(self):
+        """Read queries from stdin and process them until exit or failure."""
         while True:
             try:
                 q = input("\nQuery: ").strip()
@@ -374,9 +408,11 @@ class MCPClient:
                 print(f"\nError: {e}")
 
     async def cleanup(self):
+        """Close all managed async resources for the MCP connection."""
         await self.exit_stack.aclose()
 
 async def main():
+    """Start the browser runner from either Playwright MCP or a local server script."""
     client = MCPClient()
     try:
         if len(sys.argv) == 2 and sys.argv[1] == "--playwright":
@@ -396,5 +432,5 @@ async def main():
         await client.cleanup()
 
 if __name__ == "__main__":
-    #uv run browser_agent.py --playwright
+    # Example: uv run browser_agent.py --playwright
     asyncio.run(main())

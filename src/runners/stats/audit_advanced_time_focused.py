@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Analyze timing structure in audit logs and compare actor-specific distributions.
+
+The script groups audit records into execution bundles and short time-window clusters,
+then visualizes inter-cluster delays either globally or conditioned on a command.
+"""
+
 import os
 import re
 from dataclasses import dataclass, field
@@ -15,6 +21,11 @@ FIELD_RE_TEMPLATE = r"{key}=(?P<val>\"[^\"]*\"|\S+)"
 
 
 def extract_audit_id(line: str) -> Optional[Tuple[float, int]]:
+    """Extract the audit timestamp and serial number from a raw log line.
+
+    These two fields uniquely identify one audit event bundle. Returns `None`
+    when the line does not contain a parseable audit identifier.
+    """
     m = AUDIT_ID_RE.search(line)
     if not m:
         return None
@@ -22,6 +33,11 @@ def extract_audit_id(line: str) -> Optional[Tuple[float, int]]:
 
 
 def extract_field_from_line(line: str, key: str) -> Optional[str]:
+    """Read a single key-value field from an audit log line.
+
+    Quoted values are unwrapped so downstream comparisons can treat quoted and
+    unquoted fields uniformly. Returns `None` if the field is absent.
+    """
     pattern = re.compile(FIELD_RE_TEMPLATE.format(key=re.escape(key)))
     m = pattern.search(line)
     if not m:
@@ -40,6 +56,11 @@ class Bundle:
 
 
 def read_bundles(path: str) -> List[Bundle]:
+    """Group raw audit lines into bundles keyed by audit timestamp and serial.
+
+    Audit events are emitted across multiple lines, so analysis operates on the
+    reconstructed bundle rather than on individual records.
+    """
     bundles: Dict[Tuple[float, int], Bundle] = {}
 
     with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -58,10 +79,12 @@ def read_bundles(path: str) -> List[Bundle]:
 
 
 def has_execve(bundle: Bundle) -> bool:
+    """Return whether the bundle contains an EXECVE record."""
     return any("type=EXECVE" in line for line in bundle.lines)
 
 
 def syscall_line(bundle: Bundle) -> Optional[str]:
+    """Return the SYSCALL line for a bundle when present."""
     for line in bundle.lines:
         if "type=SYSCALL" in line:
             return line
@@ -69,6 +92,11 @@ def syscall_line(bundle: Bundle) -> Optional[str]:
 
 
 def get_tty_exe_comm(bundle: Bundle) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Extract basic execution context from the bundle's SYSCALL record.
+
+    The tuple contains `(tty, exe, comm)` and is used to distinguish
+    interactive command execution from background or system activity.
+    """
     sl = syscall_line(bundle)
     if sl is None:
         return None, None, None
@@ -79,6 +107,11 @@ def get_tty_exe_comm(bundle: Bundle) -> Tuple[Optional[str], Optional[str], Opti
 
 
 def bundle_mentions_cmd(bundle: Bundle, cmd: str) -> bool:
+    """Check whether a bundle corresponds to the requested command.
+
+    Matching is intentionally permissive across `comm`, `exe`, and `EXECVE a0`
+    because audit records are not fully consistent across environments.
+    """
     cmd = os.path.basename(cmd)
 
     _, exe, comm = get_tty_exe_comm(bundle)
@@ -98,6 +131,11 @@ def bundle_mentions_cmd(bundle: Bundle, cmd: str) -> bool:
 
 
 def filter_bundles(bundles: List[Bundle]) -> List[Bundle]:
+    """Keep only interactive command bundles relevant for timing analysis.
+
+    Bundles without `EXECVE` or without an attached TTY are excluded to avoid
+    mixing user-driven activity with background audit noise.
+    """
     kept: List[Bundle] = []
     for b in bundles:
         if not has_execve(b):
@@ -116,6 +154,11 @@ def filter_bundles(bundles: List[Bundle]) -> List[Bundle]:
 
 
 def cluster_bundles(bundles: List[Bundle], cluster_window: float = 0.5) -> List[List[Bundle]]:
+    """Merge nearby bundles into temporal clusters.
+
+    The fixed window treats short bursts of related audit activity as one event,
+    which stabilizes the timing distribution against audit line granularity.
+    """
     if not bundles:
         return []
 
@@ -139,10 +182,16 @@ def cluster_bundles(bundles: List[Bundle], cluster_window: float = 0.5) -> List[
 
 
 def inter_event_deltas(timestamps: List[float]) -> List[float]:
+    """Compute consecutive delays between ordered timestamps."""
     return [timestamps[i] - timestamps[i - 1] for i in range(1, len(timestamps))]
 
 
 def cmd_to_next_cluster_deltas(clusters: List[List[Bundle]], cmd: str) -> List[float]:
+    """Measure time from command-containing clusters to the next cluster start.
+
+    This isolates the delay immediately following one command of interest rather
+    than the full inter-event distribution.
+    """
     if len(clusters) < 2:
         return []
 
@@ -157,10 +206,17 @@ def cmd_to_next_cluster_deltas(clusters: List[List[Bundle]], cmd: str) -> List[f
 
 
 def analyze_file(path: str, cluster_window: float = 0.5, cmd: Optional[str] = None) -> Dict[str, Any]:
+    """Run the full timing analysis pipeline for one audit log.
+
+    The returned structure contains metadata, all inter-cluster delays, and an
+    optional command-conditioned delay series for downstream plotting.
+    """
+    # ---- Parse and structure audit activity ----
     bundles = read_bundles(path)
     kept = filter_bundles(bundles)
     clusters = cluster_bundles(kept, cluster_window=cluster_window)
 
+    # ---- Derive timing series ----
     cluster_starts = [c[0].ts for c in clusters]
     deltas = inter_event_deltas(cluster_starts)
 
@@ -191,6 +247,11 @@ def compute_global_log_xlim(
     *,
     series: str = "all",
 ) -> Optional[Tuple[float, float]]:
+    """Compute shared log-scale x-limits across multiple result sets.
+
+    A common axis range makes cross-actor histograms visually comparable.
+    Returns `None` when no positive finite values are available.
+    """
     vals: List[float] = []
 
     for res in results:
@@ -226,6 +287,11 @@ def plot_log_hist(
     xlim: Optional[Tuple[float, float]] = None,
     save_path: Optional[str] = None,
 ) -> None:
+    """Plot a density histogram on a logarithmic time axis.
+
+    Non-positive and non-finite values are discarded because the visualization
+    is defined on log-scaled delays only.
+    """
     values = [v for v in values if np.isfinite(v) and v > 0]
     if not values:
         print(f"[WARN] No positive finite values to plot for: {label}")
@@ -256,7 +322,13 @@ def plot_log_hist(
 
     plt.show()
 
+
 def anonymize_actor_labels(actor_names: List[str]) -> Dict[str, str]:
+    """Map actor names to display labels for publication-friendly plots.
+
+    Human participants are anonymized sequentially, while GPT-labelled actors
+    remain identifiable to preserve the comparison of interest.
+    """
     mapping: Dict[str, str] = {}
     human_idx = 1
 
@@ -279,6 +351,12 @@ def plot_selected_actors(
     bins_n: int = 50,
     save_dir: Optional[str] = None,
 ) -> None:
+    """Plot per-actor timing histograms with shared scaling.
+
+    Each selected log is analyzed independently, but the plots reuse a common
+    x-range so actor-specific distributions can be compared directly.
+    """
+    # ---- Analyze all selected logs before plotting ----
     selected_results = [
         analyze_file(path, cluster_window=cluster_window, cmd=cmd)
         for _, path in selected_file_pairs
@@ -289,6 +367,7 @@ def plot_selected_actors(
     actor_names = [label for label, _ in selected_file_pairs]
     display_names = anonymize_actor_labels(actor_names)
 
+    # ---- Render actor-level histograms ----
     for (label, _), result in zip(selected_file_pairs, selected_results):
         display_label = display_names[label]
 
@@ -315,7 +394,9 @@ def plot_selected_actors(
             save_path=save_path,
         )
 
+
 if __name__ == "__main__":
+    # ---- Configuration ----
     use_wordpress = True
     dataset = "WordPress" if use_wordpress else "Nextcloud"
 
@@ -329,12 +410,14 @@ if __name__ == "__main__":
         for actor in analysis_actors(dataset)
     ]
 
+    # Restrict plotting to the actors discussed in the current comparison.
     selected_file_pairs = [
         (label, path)
         for label, path in file_pairs
         if label in selected_labels
     ]
 
+    # ---- Plot selected comparison ----
     plot_selected_actors(
         selected_file_pairs,
         cluster_window=cluster_window,
@@ -343,6 +426,5 @@ if __name__ == "__main__":
         bins_n=50,
         save_dir="results",
     )
-
 
 

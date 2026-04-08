@@ -1,4 +1,9 @@
-# core/eval.py
+"""Evaluation helpers for classifier predictions.
+
+This module computes aggregate and per-class metrics used in the benchmark
+pipeline and keeps the reporting format consistent across experiments.
+"""
+
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import numpy as np
@@ -33,6 +38,11 @@ class EvalResult:
     confusion: np.ndarray
 
 def evaluate_classifier(y_true: np.ndarray, y_pred: np.ndarray, *, labels: Optional[List[str]] = None) -> EvalResult:
+    """Compute a compact set of classification metrics from predictions.
+
+    Metrics are derived from a shared label set so aggregate scores, per-class
+    summaries, and the confusion matrix remain aligned. Returns an `EvalResult`.
+    """
     report_dict = classification_report(
         y_true,
         y_pred,
@@ -41,6 +51,7 @@ def evaluate_classifier(y_true: np.ndarray, y_pred: np.ndarray, *, labels: Optio
         zero_division=0,
         output_dict=True,
     )
+    # Keep only the true class entries; sklearn also injects aggregate rows.
     per_class_metrics = {
         cls: {k: float(v) for k, v in metrics.items()}
         for cls, metrics in report_dict.items()

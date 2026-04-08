@@ -1,4 +1,8 @@
-# core/reporting.py
+"""Utility printers for split diagnostics and model evaluation summaries.
+
+This module keeps reporting lightweight: it provides quick split sanity checks
+and console summaries for comparing models across validation or test runs.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +15,7 @@ from src.core.ml.eval import EvalResult
 
 
 def _count_values(arr: np.ndarray) -> Dict[str, int]:
-    """Count occurrences of values in a 1D numpy array of strings/objects."""
+    """Return value counts for a 1D array of labels or other hashable entries."""
     out: Dict[str, int] = {}
     for v in arr.tolist():
         out[v] = out.get(v, 0) + 1
@@ -20,19 +24,22 @@ def _count_values(arr: np.ndarray) -> Dict[str, int]:
 
 def print_split_stats(examples: List[Example], split: Split) -> None:
     """
-    Quick sanity-check:
-      - how many samples in train/val/test
-      - label distribution per split
-      - number of unique groups per split (if groups exist)
+    Print a compact sanity check for a dataset split.
+
+    Reports sample counts, label distributions, and the number of distinct
+    groups in each partition when group metadata is available.
     """
     y = np.array([ex.label for ex in examples], dtype=object)
 
     def unique_groups(idxs: np.ndarray) -> Optional[int]:
+        # Ignore missing group identifiers so grouped and ungrouped datasets can
+        # use the same reporting path without special handling upstream.
         g = [examples[i].group for i in idxs if examples[i].group is not None]
         if not g:
             return None
         return len(set(g))
 
+    # ---- Split overview ----
     for name, idxs in [("train", split.train_idx), ("val", split.val_idx), ("test", split.test_idx)]:
         counts = _count_values(y[idxs])
         ug = unique_groups(idxs)
@@ -48,13 +55,10 @@ def print_leaderboard(
     top_k: Optional[int] = None,
 ) -> None:
     """
-    Print a small leaderboard table.
+    Print a leaderboard-style summary for one evaluation split.
 
-    Expected structure:
-      results[model_name]["val"]  -> EvalResult
-      results[model_name]["test"] -> EvalResult
-
-    sort_by: "f1_macro" | "f1_weighted" | "accuracy"
+    Expects ``results[model_name][split_name]`` to contain ``EvalResult``
+    objects and sorts models by the requested aggregate metric.
     """
     if sort_by not in {"f1_macro", "f1_weighted", "accuracy"}:
         raise ValueError("sort_by must be one of: f1_macro, f1_weighted, accuracy")
@@ -84,7 +88,10 @@ def print_model_report(
     split_name: str = "val",
 ) -> None:
     """
-    Print the per-class report + confusion matrix for one model on one split.
+    Print the detailed report for a single model on one split.
+
+    This exposes the stored per-class metrics and confusion matrix for
+    inspection after model selection or debugging.
     """
     if model_name not in results:
         raise KeyError(f"Unknown model '{model_name}'. Available: {list(results.keys())}")

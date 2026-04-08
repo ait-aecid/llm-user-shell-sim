@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+"""Runner for one-gram distance experiments in single and sweep mode.
+
+This script builds experiment configurations, executes the one-gram statistic,
+and forwards results to the shared evaluation pipeline under true or null-style
+label assignments.
+"""
+
 import argparse
 
 from src.stats_tools import one_gram
@@ -7,6 +14,12 @@ from src.core.stats.common_runner import evaluate_single_run
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse and validate CLI arguments for one-gram experiments.
+
+    The validation logic enforces mode-specific requirements and prevents
+    dataset/log-type combinations that are not supported. Returns a validated
+    argparse namespace.
+    """
     parser = argparse.ArgumentParser(
         description="Run one_gram in single or sweep mode."
     )
@@ -51,7 +64,7 @@ def parse_args() -> argparse.Namespace:
         help="Log type for single mode.",
     )
 
-    # single mode arguments
+    # ---- Single-run configuration ----
     parser.add_argument(
         "--ngram_mode",
         choices=["char", "word"],
@@ -65,6 +78,8 @@ def parse_args() -> argparse.Namespace:
 
     args = parser.parse_args()
 
+    # Indexed stratification represents a specific precomputed label assignment,
+    # so the index is required there and meaningless for other modes.
     if args.assignment_mode == "indexed_stratified" and args.assignment_idx is None:
         parser.error(
             "--assignment_idx is required when --assignment_mode indexed_stratified"
@@ -78,6 +93,8 @@ def parse_args() -> argparse.Namespace:
             "--assignment_idx may only be used when --assignment_mode indexed_stratified"
         )
 
+    # Single mode executes one concrete configuration and therefore requires
+    # all fields needed to build that configuration explicitly.
     if args.mode == "single":
         missing = []
         if args.log_type is None:
@@ -116,12 +133,21 @@ def run_one_gram(
     metric: str | None = None,
     out_csv: str | None = None,
 ) -> None:
+    """Run one-gram analysis for one configuration or a predefined sweep.
+
+    In single mode, the function evaluates one explicit setup and generates
+    plots. In sweep mode, it iterates over a fixed grid of configurations and
+    appends comparable evaluation results to the output CSV.
+    """
+    # Keep dataset-specific outputs separate so repeated sweeps append to the
+    # appropriate results table by default.
     output_path = out_csv or (
         f"results/statistic_one_gram"
         f"{'_wordpress' if dataset == 'WordPress' else '_nextcloud'}.csv"
     )
 
     if mode == "single":
+        # ---- Single configuration ----
         config = {
             "dataset": dataset,
             "log_type": log_type,
@@ -146,6 +172,7 @@ def run_one_gram(
         )
 
     elif mode == "sweep":
+        # ---- Parameter sweep ----
         if log_type is not None:
             log_types = [log_type]
 
@@ -168,6 +195,8 @@ def run_one_gram(
             f"output_path={output_path}"
         )
 
+        # Each sweep entry is evaluated independently so the shared runner can
+        # aggregate comparable results across metrics and representation modes.
         for i, config in enumerate(configs, 1):
             print(
                 f"\n[{i}/{len(configs)}] "
@@ -183,6 +212,8 @@ def run_one_gram(
                 labels=result["labels"],
                 pairwise_results=result["pairwise_results"],
                 distance_name=config["metric"],
+                # Bind the metric name at definition time so each sweep result
+                # is evaluated against the intended distance column.
                 distance_extractor=lambda item, metric_name=config["metric"]: item[metric_name],
                 hyperparameters={
                     "log_type": config["log_type"],

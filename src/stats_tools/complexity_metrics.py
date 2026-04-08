@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Compute pairwise complexity differences between log files.
+
+The module compares logs through shared template assignments so that frequency-
+and sequence-based metrics are measured in a common representation.
+"""
+
 from collections import Counter
 from itertools import combinations
 from pathlib import Path
@@ -44,6 +50,11 @@ def load_preprocessed_lines(
     *,
     preprocess_mode: str = "template",
 ) -> list[str]:
+    """Load a log file and apply line-level preprocessing.
+
+    Log type is inferred from the file name and passed into the shared
+    preprocessing pipeline. Empty lines are dropped from the result.
+    """
     path = Path(file_path)
     log_type = _infer_log_type(path.name)
 
@@ -64,6 +75,11 @@ def load_preprocessed_lines(
 
 
 def sliding_windows(ids: list[int], window_size: int, stride: int) -> list[tuple[int, ...]]:
+    """Return fixed-length windows over a sequence of cluster ids.
+
+    Only complete windows are kept. The stride controls overlap between
+    successive windows.
+    """
     if window_size <= 0:
         raise ValueError("window_size must be > 0")
     if stride <= 0:
@@ -76,6 +92,10 @@ def sliding_windows(ids: list[int], window_size: int, stride: int) -> list[tuple
 
 
 def gini_from_counts(counter: Counter) -> float:
+    """Compute the Gini coefficient of a count distribution.
+
+    Returns `nan` when the distribution is empty or degenerate.
+    """
     if not counter:
         return float("nan")
     x = np.array(sorted(counter.values()), dtype=float)
@@ -87,6 +107,11 @@ def gini_from_counts(counter: Counter) -> float:
 
 
 def kurtosis_from_counts(counter: Counter, *, convexify: bool = True) -> float:
+    """Compute excess kurtosis from observed frequencies.
+
+    When `convexify` is enabled, frequencies are mirrored before estimation to
+    stabilize the shape statistic for sparse discrete counts.
+    """
     freq = list(counter.values())
     if len(freq) == 0:
         return float("nan")
@@ -118,6 +143,11 @@ def kurtosis_from_counts(counter: Counter, *, convexify: bool = True) -> float:
 
 
 def entropy_from_counts(counter: Counter, *, base: float = 2.0) -> float:
+    """Compute Shannon entropy from a count distribution.
+
+    The logarithm base controls the entropy units. Invalid or empty
+    distributions return `nan`.
+    """
     if not counter:
         return float("nan")
     x = np.array(list(counter.values()), dtype=float)
@@ -137,6 +167,10 @@ def entropy_from_counts(counter: Counter, *, base: float = 2.0) -> float:
 
 
 def mad_from_counts(counter: Counter) -> float:
+    """Compute mean absolute deviation of count frequencies.
+
+    Returns `nan` when no valid frequency vector can be formed.
+    """
     if not counter:
         return float("nan")
     x = np.array(list(counter.values()), dtype=float)
@@ -147,6 +181,11 @@ def mad_from_counts(counter: Counter) -> float:
 
 
 def counter_to_probs(counter: Counter, vocab: list[Any]) -> np.ndarray:
+    """Project counts onto a shared vocabulary and normalize to probabilities.
+
+    The provided vocabulary fixes the support for later distance calculations.
+    Empty mass yields an all-zero vector.
+    """
     arr = np.array([counter[item] for item in vocab], dtype=float)
     total = arr.sum()
     if total <= 0:
@@ -155,6 +194,11 @@ def counter_to_probs(counter: Counter, vocab: list[Any]) -> np.ndarray:
 
 
 def l1_distance_from_counters(counter1: Counter, counter2: Counter) -> float:
+    """Compute the L1 distance between two empirical count distributions.
+
+    Both counters are aligned to the union of observed items before
+    normalization.
+    """
     vocab = sorted(set(counter1) | set(counter2), key=str)
     if not vocab:
         return float("nan")
@@ -164,6 +208,11 @@ def l1_distance_from_counters(counter1: Counter, counter2: Counter) -> float:
 
 
 def js_distance_from_counters(counter1: Counter, counter2: Counter) -> float:
+    """Compute Jensen-Shannon distance between two count distributions.
+
+    The counters are first normalized on a shared support. Returns `nan` when
+    either distribution has zero total mass.
+    """
     vocab = sorted(set(counter1) | set(counter2), key=str)
     if not vocab:
         return float("nan")
@@ -180,6 +229,11 @@ def stats_from_ids(
     min_ids: int = 20,
     min_unique_ids: int = 3,
 ) -> dict[str, float]:
+    """Summarize distributional complexity for cluster-id frequencies.
+
+    Metrics are only reported once enough observations exist; otherwise `nan`
+    values are returned to keep downstream comparisons explicit.
+    """
     if len(ids) < min_ids:
         return {
             "gini": float("nan"),
@@ -211,6 +265,11 @@ def stats_from_windows(
     min_windows: int = 20,
     min_unique_windows: int = 4,
 ) -> dict[str, float]:
+    """Summarize complexity over repeated sequence windows.
+
+    Windows are counted as discrete motifs. As above, small samples are marked
+    as invalid rather than forcing unstable estimates.
+    """
     wins = sliding_windows(ids, window_size, stride)
 
     if len(wins) < min_windows:
@@ -252,9 +311,16 @@ def complexity_metrics_from_lines(
     list[tuple[int, ...]],
     dict[int, str],
 ]:
+    """Assign shared templates and compute per-log complexity metrics.
+
+    Both logs are parsed with the same template miner so metric differences are
+    attributable to the data rather than to separate template vocabularies.
+    """
     cfg = LoadConfig(drain_ini_path=drain_ini_path)
     miner = _create_template_miner(ini_path=_get_drain_ini(cfg))
 
+    # Fit and assign on the concatenated corpus so both logs share one template
+    # space before any frequency or sequence comparison is made.
     assigned_templates, cluster_ids = _assign_templates_and_cids_global(miner, lines1 + lines2)
 
     cid_to_template: dict[int, str] = {}
@@ -266,6 +332,7 @@ def complexity_metrics_from_lines(
     cids1 = cluster_ids[:n1]
     cids2 = cluster_ids[n1:]
 
+    # Sequence metrics are only defined when a full window can be formed.
     seqs1 = sliding_windows(cids1, window_size, stride) if len(cids1) >= window_size else []
     seqs2 = sliding_windows(cids2, window_size, stride) if len(cids2) >= window_size else []
 
@@ -294,6 +361,11 @@ def compute_pairwise_metric_differences(
     preprocess_mode: str = "template",
     drain_ini_path: Optional[str] = None,
 ) -> dict[str, Any]:
+    """Compare two log files in a shared template representation.
+
+    The output includes per-file metrics, absolute differences, and the
+    intermediate counters needed for later inspection or visualization.
+    """
     lines1 = load_preprocessed_lines(file_1, preprocess_mode=preprocess_mode)
     lines2 = load_preprocessed_lines(file_2, preprocess_mode=preprocess_mode)
 
@@ -310,6 +382,8 @@ def compute_pairwise_metric_differences(
     seq_counter_1 = Counter(seqs1)
     seq_counter_2 = Counter(seqs2)
 
+    # Scalar metrics are compared as absolute differences, whereas L1 and
+    # Jensen-Shannon directly compare the full empirical distributions.
     distances = {
         key: abs(metrics1[key] - metrics2[key])
         for key in (
@@ -327,6 +401,8 @@ def compute_pairwise_metric_differences(
     distances["l1"] = l1_distance_from_counters(cid_counter_1, cid_counter_2)
     distances["js"] = js_distance_from_counters(cid_counter_1, cid_counter_2)
 
+    # Sequence-distribution distances are only meaningful when both files
+    # contribute at least one full window.
     if seqs1 and seqs2:
         distances["l1_seq"] = l1_distance_from_counters(seq_counter_1, seq_counter_2)
         distances["js_seq"] = js_distance_from_counters(seq_counter_1, seq_counter_2)
@@ -362,6 +438,11 @@ def score_file_pairs(
     preprocess_mode: str = "template",
     drain_ini_path: Optional[str] = None,
 ) -> list[dict[str, Any]]:
+    """Compute pairwise metric differences for all file combinations.
+
+    Each result is annotated with the source labels so later analyses can trace
+    distances back to the corresponding actors.
+    """
     results: list[dict[str, Any]] = []
 
     for (label_1, file_1), (label_2, file_2) in combinations(file_pairs, 2):
@@ -383,6 +464,12 @@ def score_file_pairs(
 
 
 def run(config: dict) -> dict:
+    """Execute the pairwise complexity analysis for one configuration.
+
+    The configuration selects the dataset, log type, and sequence settings used
+    to compare all actors available for that dataset.
+    """
+    # ---- Resolve analysis inputs ----
     dataset = config["dataset"]
     log_type = config["log_type"]
     window_size = config["window_size"]
@@ -397,6 +484,7 @@ def run(config: dict) -> dict:
 
     labels = [label for label, _ in file_pairs]
 
+    # ---- Score all actor pairs ----
     pairwise_results = score_file_pairs(
         file_pairs,
         window_size=window_size,
@@ -420,6 +508,11 @@ def build_sweep_configs(
     preprocess_mode: str = "soft",
     drain_ini_path: str | None = None,
 ) -> list[dict]:
+    """Construct a parameter grid for repeated analysis runs.
+
+    Each configuration corresponds to one combination of log type, window size,
+    and stride under a shared dataset and preprocessing setup.
+    """
     configs: list[dict] = []
 
     for log_type in log_types:
@@ -442,6 +535,11 @@ def get_invalid_labels_for_metric(
     pairwise_results: list[dict[str, Any]],
     metric_name: str,
 ) -> list[str]:
+    """Return labels involved in invalid pairwise results for one metric.
+
+    A label is marked invalid if any of its pairwise comparisons produces a
+    non-finite value for the requested distance.
+    """
     invalid_pairs = [
         item for item in pairwise_results
         if not np.isfinite(item["distances"][metric_name])
@@ -455,7 +553,6 @@ def get_invalid_labels_for_metric(
     } | {
         item["label_2"] for item in invalid_pairs
     })
-
 
 
 

@@ -1,20 +1,10 @@
 #!/usr/bin/env python3
 """
-tfidf_nested_attribution_report.py
+Rebuild a selected TF-IDF experiment row and render an attribution report.
 
-Goal:
-- Take ONE selected result-row from the CSV produced by experiments/tfidf_360_nested.py
-- Recreate the SAME data loading + SAME outer split (val_groups/test_groups)
-- Train TF-IDF + (LinearSVC or LogisticRegression) with the selected hyperparameters
-- Generate an HTML report that highlights top-3 influential present n-grams
-  toward the model prediction (Top1=red, Top2=orange, Top3=green).
-
-Highlighting improvements:
-- Works on raw text then escapes safely (no fragile exact match on escaped text).
-- Case-insensitive matching.
-- For analyzer='word': token-based matching so bigrams/trigrams match even with punctuation like comm="vim".
-- For analyzer='char'/'char_wb': substring matching with overlap-avoidance.
-- Highlights multiple occurrences (capped) and avoids overlapping spans.
+The script reconstructs the original data split and model configuration from a
+results CSV row, retrains the corresponding classifier, and highlights the most
+influential n-grams present in each example.
 """
 
 from __future__ import annotations
@@ -57,6 +47,7 @@ class VectorizerConfig:
 
 
 def build_vectorizer(cfg: VectorizerConfig) -> TfidfVectorizer:
+    """Build the TF-IDF vectorizer from the serialized experiment settings."""
     return TfidfVectorizer(
         analyzer=cfg.analyzer,
         ngram_range=cfg.ngram_range,
@@ -78,6 +69,11 @@ def build_model(
     *,
     random_state: int = 42,
 ) -> BaseEstimator:
+    """Instantiate the classifier used in the original experiment row.
+
+    Defaults are chosen to mirror the training pipeline so that attribution is
+    computed on a faithful reconstruction of the selected configuration.
+    """
     params = params or {}
 
     if model_name == "svm":
@@ -121,7 +117,7 @@ def build_model(
 
 
 # -----------------------------
-# Rebuild LoadConfig from name (match your tfidf_360_nested.py grid)
+# LoadConfig reconstruction
 # -----------------------------
 @dataclass(frozen=True)
 class NamedLoad:
@@ -130,6 +126,11 @@ class NamedLoad:
 
 
 def infer_log_files_from_results_csv(results_csv: str) -> tuple[str, ...]:
+    """Infer the log source from the results filename.
+
+    This assumes the experiment CSV naming scheme encodes the dataset family,
+    which keeps report generation aligned with the original benchmark run.
+    """
     name = Path(results_csv).name.lower()
 
     if "syslog" in name:
@@ -148,8 +149,10 @@ def infer_log_files_from_results_csv(results_csv: str) -> tuple[str, ...]:
 
 def make_load_configs(log_files: tuple[str, ...]) -> List[NamedLoad]:
     """
-    IMPORTANT: keep this in sync with experiments/tfidf_360_nested.py
-    (the grid that produced the CSV).
+    Recreate the load-configuration grid used to produce the results CSV.
+
+    The names must stay in sync with `tfidf_360_nested.py`, otherwise a
+    selected row cannot be mapped back to the data-loading setup it used.
     """
     base = dict(
         log_files=log_files,
@@ -159,7 +162,7 @@ def make_load_configs(log_files: tuple[str, ...]) -> List[NamedLoad]:
 
     out: List[NamedLoad] = []
 
-    # 1) per-line (no windows)
+    # Keep the naming scheme identical to the experiment grid so row lookup is stable.
     for preprocess_mode in ["raw", "soft", "aggressive"]:
         out.append(
             NamedLoad(
@@ -172,9 +175,8 @@ def make_load_configs(log_files: tuple[str, ...]) -> List[NamedLoad]:
             )
         )
 
-    # 2) line windows
+    # Line windows expand local context while preserving the original stride choices.
     for preprocess_mode in ["soft", "aggressive"]:
-        # IMPORTANT: include all ws used in the producing script
         for ws in [4, 5, 10, 25, 50]:
             st = max(1, 2, ws // 2)
             out.append(
@@ -192,7 +194,7 @@ def make_load_configs(log_files: tuple[str, ...]) -> List[NamedLoad]:
                 )
             )
 
-    # 3) CID windows
+    # CID windows mirror the subset explored in the nested TF-IDF search.
     for preprocess_mode in ["soft"]:
         for ws in [10, 25, 50]:
             st = max(1, ws // 2)
@@ -214,6 +216,11 @@ def make_load_configs(log_files: tuple[str, ...]) -> List[NamedLoad]:
     return out
 
 def resolve_load_config(load_name: str, log_files: tuple[str, ...]) -> LoadConfig:
+    """Resolve a serialized load-config name back to its `LoadConfig`.
+
+    Raises when the local reconstruction no longer matches the grid used during
+    experiment generation, which would invalidate the report.
+    """
     grid = make_load_configs(log_files)
     for named in grid:
         if named.name == load_name:
@@ -234,9 +241,10 @@ _VECTOR_RE = re.compile(r"VectorizerConfig\s*\((.*)\)\s*$")
 
 def _parse_vectorizer_config(s: str) -> VectorizerConfig:
     """
-    Accepts strings like:
-      "VectorizerConfig(analyzer='char', ngram_range=(3, 5), min_df=5, ...)"
-    or a raw dict-like string.
+    Parse a serialized vectorizer configuration from the results CSV.
+
+    The CSV may store either the dataclass-style repr or a plain dict literal.
+    Both forms are supported to keep older result files readable.
     """
     s = (s or "").strip()
 
@@ -250,6 +258,7 @@ def _parse_vectorizer_config(s: str) -> VectorizerConfig:
 
     inside = m.group(1).strip()
 
+    # Split only on top-level commas so tuple-valued fields survive intact.
     parts: List[str] = []
     buf: List[str] = []
     depth = 0
@@ -280,6 +289,7 @@ def _parse_vectorizer_config(s: str) -> VectorizerConfig:
 
 
 def _parse_model_params(s: str) -> Dict[str, Any]:
+    """Parse the serialized model-parameter dict stored in the results CSV."""
     s = (s or "").strip()
     if not s:
         return {}
@@ -308,6 +318,11 @@ class ModelAttribution:
 
 
 def _decision_value(clf: BaseEstimator, X_row) -> float:
+    """Return a scalar decision score with a consistent sign convention.
+
+    When a classifier exposes different confidence APIs, this normalizes them
+    to a single value used only for display in the report.
+    """
     if hasattr(clf, "decision_function"):
         return float(clf.decision_function(X_row)[0])
     if hasattr(clf, "predict_log_proba"):
@@ -321,9 +336,10 @@ def _decision_value(clf: BaseEstimator, X_row) -> float:
 
 def _get_weights_for_attribution(clf: BaseEstimator) -> np.ndarray:
     """
-    Weight vector w such that contribution ~ w_j * x_j toward "positive class".
-    For linear models: coef_
-    For NB: feature_log_prob_[1] - feature_log_prob_[0]
+    Return feature weights for additive attribution toward the positive class.
+
+    Linear models expose `coef_` directly; Naive Bayes uses the classwise
+    log-probability difference so contributions remain comparable in sign.
     """
     if hasattr(clf, "coef_"):
         return np.asarray(getattr(clf, "coef_")).ravel()
@@ -344,11 +360,10 @@ def _top_k_features_for_text(
     k: int = 3,
 ) -> Tuple[str, float, List[TopFeature]]:
     """
-    Top-K present features that support the predicted class.
+    Return the strongest present features supporting the predicted class.
 
-    contrib toward class1 (labels_sorted[1]) as w_j * x_j.
-    If predicted is class1 -> pick largest contrib
-    else -> pick largest (-contrib) (i.e. most pushes to class0)
+    Contributions are computed on the transformed row only, so the report
+    highlights evidence actually present in the example rather than global weights.
     """
     X = vectorizer.transform([text])
     pred_lab = str(clf.predict(X)[0])
@@ -364,6 +379,8 @@ def _top_k_features_for_text(
     x_vals = X.data
     contrib1 = w[nz] * x_vals
 
+    # `w_j * x_j` is directional toward `labels_sorted[1]`; flip the sign when the
+    # prediction is the other class so "top" always means evidence for the prediction.
     pos_label = labels_sorted[1]
     is_pos = (pred_lab == pos_label)
     scores = contrib1 if is_pos else -contrib1
@@ -393,8 +410,11 @@ class _TokenSpan:
 
 
 def _tokenize_with_spans(text: str) -> List[_TokenSpan]:
-    # Similar spirit to sklearn tokenization: grab "word-ish" chunks
-    # so things like comm="vim" yields tokens: comm, vim
+    """Tokenize text into word-like spans used for robust highlighting.
+
+    The tokenizer is intentionally simple but close enough to sklearn's default
+    behavior to recover word n-grams across punctuation boundaries.
+    """
     out: List[_TokenSpan] = []
     for m in _WORD_RE.finditer(text):
         out.append(_TokenSpan(m.group(0), m.start(), m.end()))
@@ -402,13 +422,16 @@ def _tokenize_with_spans(text: str) -> List[_TokenSpan]:
 
 
 def _ranges_overlap(a: Tuple[int, int], b: Tuple[int, int]) -> bool:
+    """Return whether two half-open character ranges overlap."""
     return not (a[1] <= b[0] or b[1] <= a[0])
 
 
 def _find_word_ngram_ranges(text: str, ngram: str, *, max_hits: int = 6) -> List[Tuple[int, int]]:
     """
-    Find character ranges in `text` matching the ngram as a sequence of word tokens.
-    Case-insensitive, punctuation-insensitive between tokens (because we match by token stream).
+    Locate word n-gram matches by token sequence rather than raw substring.
+
+    This makes highlighting resilient to punctuation and casing differences
+    between the original text and the vectorizer's tokenization.
     """
     toks = _tokenize_with_spans(text)
     if not toks:
@@ -435,7 +458,10 @@ def _find_word_ngram_ranges(text: str, ngram: str, *, max_hits: int = 6) -> List
 
 def _find_char_ngram_ranges(text: str, needle: str, *, max_hits: int = 6) -> List[Tuple[int, int]]:
     """
-    Case-insensitive substring match for char analyzers.
+    Locate character n-gram matches with case-insensitive substring search.
+
+    Overlaps are allowed here and resolved later so higher-ranked features can
+    claim the most informative spans first.
     """
     if not needle:
         return []
@@ -450,7 +476,7 @@ def _find_char_ngram_ranges(text: str, needle: str, *, max_hits: int = 6) -> Lis
         hits.append((idx, idx + len(needle)))
         if len(hits) >= max_hits:
             break
-        pos = idx + 1  # allow overlaps; we will resolve overlaps later
+        pos = idx + 1
     return hits
 
 
@@ -459,9 +485,10 @@ def _apply_highlights_non_overlapping(
     spans: List[Tuple[int, int, int, str]],
 ) -> str:
     """
-    spans: list of (start, end, rank_index, tooltip)
-    rank_index 0/1/2 controls red/orange/green.
-    Produces HTML with correct escaping.
+    Apply ranked highlight spans while preserving valid escaped HTML.
+
+    Overlapping candidates are discarded so the rendered text stays readable
+    and each character belongs to at most one highlighted feature.
     """
     styles = [
         "background:#ffe5e5;color:#b00000;font-weight:700;padding:0 2px;border-radius:3px;",
@@ -469,7 +496,7 @@ def _apply_highlights_non_overlapping(
         "background:#e6ffe6;color:#006b00;font-weight:700;padding:0 2px;border-radius:3px;",
     ]
 
-    # sort by start, then by better rank (0 first), then by longer span
+    # Prefer earlier spans, then higher-ranked features, then longer matches.
     spans_sorted = sorted(spans, key=lambda x: (x[0], x[2], -(x[1] - x[0])))
 
     accepted: List[Tuple[int, int, int, str]] = []
@@ -504,12 +531,10 @@ def _highlight_text_html(
     max_hits_per_feature: int = 4,
 ) -> str:
     """
-    Robust highlighting for word and char analyzers.
-    - word: match by token sequence ignoring punctuation and case
-    - char/char_wb: case-insensitive substring
-    Also:
-    - highlight multiple occurrences (capped)
-    - avoid overlapping highlights
+    Render HTML highlights for the top attributed features in one example.
+
+    Word analyzers match by token sequence; character analyzers match by
+    substring. In both cases matches are capped and forced to be non-overlapping.
     """
     spans: List[Tuple[int, int, int, str]] = []
 
@@ -529,7 +554,6 @@ def _highlight_text_html(
             spans.append((s, e, rank, tooltip))
 
     if not spans:
-        # no highlight; still escape
         return html.escape(text)
 
     return _apply_highlights_non_overlapping(text, spans)
@@ -544,6 +568,7 @@ def _build_html_report(
     title: str,
     subtitle: str,
 ) -> str:
+    """Build the standalone HTML attribution report for the selected examples."""
     css = """
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
            margin: 20px; color: #111; }
@@ -617,9 +642,10 @@ def _build_html_report(
 
 
 # -----------------------------
-# Main
+# CLI
 # -----------------------------
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for row selection and report generation."""
     p = argparse.ArgumentParser()
     p.add_argument("--results_csv", type=str, required=True, help="CSV from experiments/tfidf_360_nested.py")
 
@@ -666,6 +692,11 @@ def read_selected_row(
     selection_metric: str,
     selection_mode: str,
 ) -> Dict[str, str]:
+    """Select one experiment row from the results CSV.
+
+    Rows can be chosen directly, by outer split index, or by the best value of
+    a requested metric. The returned mapping is the raw CSV row.
+    """
     with open(path, "r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
@@ -693,6 +724,8 @@ def read_selected_row(
                 f"Available columns include: {list(rows[0].keys())}"
             )
 
+        # Filter out missing or non-numeric cells so selection reflects only
+        # rows where the requested metric was actually computed.
         scored_rows: List[Tuple[float, Dict[str, str]]] = []
         for r in rows:
             raw = str(r.get(selection_metric, "")).strip()
@@ -724,7 +757,10 @@ def read_selected_row(
     raise RuntimeError("No row selection mode was provided.")
 
 def main() -> None:
+    """Rebuild the selected TF-IDF model and write an attribution report."""
     args = parse_args()
+
+    # ---- Recover the original experiment configuration ----
     log_files = infer_log_files_from_results_csv(args.results_csv)
     print(f"Inferred log_files from CSV: {log_files}")
 
@@ -736,7 +772,9 @@ def main() -> None:
         selection_metric=args.selection_metric,
         selection_mode=args.selection_mode,
     )
-    
+
+    # The CSV stores the human/AI group identifiers for the outer split. Reusing
+    # them here ensures the report is generated on the same validation/test split.
     val_groups = [row["val_human"], row["val_ai"]]
     test_groups = [row["test_human"], row["test_ai"]]
 
@@ -753,6 +791,7 @@ def main() -> None:
     if not examples:
         raise RuntimeError("load_examples produced no examples for this LoadConfig.")
 
+    # ---- Recreate the train/validation/test partition ----
     y_all = np.array([e.label for e in examples], dtype=object)
     groups = np.array([e.group for e in examples], dtype=object)
 
@@ -769,6 +808,7 @@ def main() -> None:
     if len(labels_sorted) != 2:
         raise ValueError(f"Expected binary labels, got {labels_sorted}")
 
+    # ---- Train the reconstructed model ----
     X_train, y_train = X_all[split.train_idx], y_all[split.train_idx]
     X_val, y_val = X_all[split.val_idx], y_all[split.val_idx]
     X_test, y_test = X_all[split.test_idx], y_all[split.test_idx]
@@ -788,6 +828,8 @@ def main() -> None:
         y_target = y_test
         split_name = "TEST"
 
+    # Shuffle with a fixed seed so the report samples are deterministic without
+    # depending on the original dataset order.
     n = min(int(args.max_lines), int(len(X_target)))
 
     rng = np.random.RandomState(42)
@@ -801,11 +843,13 @@ def main() -> None:
 
     rows_html: List[Tuple[str, str, List[ModelAttribution]]] = []
 
+    # sklearn may expose a callable analyzer internally; the report only needs
+    # to distinguish between word- and character-style highlighting.
     analyzer = str(getattr(vec, "analyzer", "word"))
-    # sklearn stores analyzer possibly as callable; we only handle string configs
     if callable(analyzer):
         analyzer = "word"
 
+    # ---- Attribute and render selected examples ----
     for text, y_true in zip(X_target.tolist(), y_target.tolist()):
         text_s = str(text)
         pred, dec, top_feats = _top_k_features_for_text(

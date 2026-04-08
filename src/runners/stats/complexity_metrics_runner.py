@@ -1,3 +1,9 @@
+"""Run complexity-based sequence metrics under true or null-style assignments.
+
+This runner supports a single configuration or a sweep over window/stride settings
+and forwards each result to the shared evaluation pipeline.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -15,6 +21,11 @@ CLI_TO_METRIC_KEY = {
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse and validate CLI arguments for single-run and sweep execution.
+
+    Enforces mode-specific requirements and dataset/log-type compatibility.
+    Returns the validated namespace used to launch the runner.
+    """
     parser = argparse.ArgumentParser(
         description="Run complexity metrics in single or sweep mode."
     )
@@ -124,12 +135,19 @@ def run_complexity_metrics(
     metric_name: str | None = None,
     out_csv: str | None = None,
 ) -> None:
+    """Execute one complexity-metric run or a sweep of predefined configurations.
+
+    Single mode evaluates one selected metric, while sweep mode iterates over a
+    fixed set of temporal resolutions and all available metric variants.
+    """
+    # Keep dataset-specific outputs separate so sweeps append to the expected table.
     output_path = out_csv or (
         f"results/statistic_complexity_metrics"
         f"{'_wordpress' if dataset == 'WordPress' else '_nextcloud'}.csv"
     )
 
     if mode == "single":
+        # ---- Single configuration ----
         config = {
             "dataset": dataset,
             "log_type": log_type,
@@ -143,6 +161,7 @@ def run_complexity_metrics(
         pairwise_results = result["pairwise_results"]
         labels = result["labels"]
 
+        # Non-finite distances make the downstream test invalid for the affected metric.
         invalid_labels = complexity_metrics.get_invalid_labels_for_metric(
             pairwise_results,
             metric_name,
@@ -173,9 +192,12 @@ def run_complexity_metrics(
         )
 
     elif mode == "sweep":
+        # ---- Sweep over temporal resolutions ----
         if log_type is not None:
             log_types = [log_type]
 
+        # These settings probe local to longer-range sequence structure without
+        # exploding the grid size.
         window_stride_pairs = [
             (1, 1),   # unigram-like
             (3, 1),   # short local patterns
@@ -217,6 +239,7 @@ def run_complexity_metrics(
             pairwise_results = result["pairwise_results"]
             labels = result["labels"]
 
+            # Reuse the same pairwise distances across all metric-specific evaluations.
             for metric_name in complexity_metrics.METRIC_KEYS:
                 print(f"\n--- Evaluating metric={metric_name} ---")
 

@@ -1,19 +1,9 @@
-# experiments/cnn_360_nested.py
-#
-# Run:
-#   python -m experiments.cnn_360_nested
-#
-# Debug (only first 5 outer splits):
-#   python -m experiments.cnn_360_nested --limit_outer 5
-#
-# What it does:
-# - Outer loop: 360 (val_groups, test_groups) splits from core.val_test_combs
-# - Inner loop (per outer split):
-#     - loop over LoadConfig grid (small)
-#     - run cnn_pipeline.search() over candidate grid
-#     - pick best (LoadConfig + Candidate) by VAL metric ONLY
-#     - record VAL + TEST (f1_macro + balanced_accuracy) for the selected combo
-# - Save results to CSV
+"""Run nested CNN model selection across predefined validation/test group splits.
+
+The script evaluates a small preprocessing grid and CNN hyperparameter grid for
+each outer split, selects configurations by validation performance only, and
+records the corresponding held-out test metrics to CSV.
+"""
 
 from __future__ import annotations
 
@@ -35,9 +25,14 @@ from src.ml_pipelines.cnn_pipeline import Candidate, CNNConfig, search
 
 
 # -------------------------
-# Args
+# Argument parsing
 # -------------------------
 def parse_args():
+    """Parse CLI options for dataset selection, scoring metric, and output control.
+
+    The runner supports a debug mode that limits the number of outer splits and
+    an optional timing mode for the slowest stages.
+    """
     p = argparse.ArgumentParser()
     p.add_argument(
         "--dataset",
@@ -63,7 +58,7 @@ def parse_args():
 
 
 # -------------------------
-# 1) LoadConfig grid
+# LoadConfig grid
 # -------------------------
 @dataclass(frozen=True)
 class NamedLoad:
@@ -72,24 +67,21 @@ class NamedLoad:
 
 
 def make_load_configs(dataset: str) -> List[NamedLoad]:
-    """
-    Keep this SMALL. CNN training is expensive.
-    Typical useful knobs:
-      - preprocess_mode (soft/aggressive)
-      - window_mode (cids vs lines vs none)
-      - window_size/stride
-      - max_lines_per_file
+    """Build the small preprocessing grid explored inside each outer split.
+
+    The grid is intentionally narrow because each option triggers a full nested
+    CNN search. Returned entries pair a readable name with a `LoadConfig`.
     """
     base = dict(
         dataset=dataset,
         log_files=("audit.log",),
         prefix_with_log_type=False,
-        max_lines_per_file=None,   # increase if you can afford it
+        max_lines_per_file=None,
     )
 
     out: List[NamedLoad] = []
 
-    # A) CID windows (often best for your CNN setup)
+    # CID windows are the main representation of interest for this CNN setup.
     for preprocess_mode in ["soft"]:
         for ws in [30]:
             st = max(1, ws // 2)
@@ -106,8 +98,8 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
                 ),
             ))
 
-    # B) Line windows (more raw context, sometimes helps)
-    # long lines will get truncated and therefor this approach doesn't make sense
+    # Line-window variants are kept disabled because truncation undermines the
+    # benefit of preserving longer raw-line context in this pipeline.
     '''
     for preprocess_mode in ["soft", "aggressive"]:
         for ws in [25, 50]:
@@ -126,7 +118,7 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
             ))
     '''
 
-    # C) No windows (one line per example) — optional
+    # The no-window baseline keeps one line per example for comparison.
     for preprocess_mode in ["soft"]:
         out.append(NamedLoad(
             name=f"none_{preprocess_mode}",
@@ -141,12 +133,13 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
 
 
 # -------------------------
-# 2) CNN hyperparameter grid
+# CNN hyperparameter grid
 # -------------------------
 def make_candidates() -> List[Candidate]:
-    """
-    Keep SMALL first.
-    Expand later after you have runtime under control.
+    """Create the compact CNN search grid used by the inner loop.
+
+    The space is deliberately conservative so nested evaluation remains
+    computationally feasible while still testing the main architectural choices.
     """
     candidates: List[Candidate] = []
 
@@ -179,6 +172,7 @@ def make_candidates() -> List[Candidate]:
 
 
 def _safe_float(x: object) -> float:
+    """Convert metric-like values to float, falling back to `nan` on failure."""
     try:
         return float(x)  # type: ignore[arg-type]
     except Exception:
@@ -186,6 +180,7 @@ def _safe_float(x: object) -> float:
 
 
 def _resolve_out_csv(path: str) -> str:
+    """Normalize the output CSV path and ensure its parent directory exists."""
     p = Path(path)
     if str(p.parent) == ".":
         p = Path("results") / p
@@ -194,9 +189,15 @@ def _resolve_out_csv(path: str) -> str:
 
 
 # -------------------------
-# 3) Main
+# Main experiment loop
 # -------------------------
 def main():
+    """Run the nested evaluation and write one summary row per outer split.
+
+    For each predefined validation/test group pairing, the script selects the
+    best preprocessing-model combination on validation data only and stores the
+    corresponding validation and test metrics.
+    """
 
     args = parse_args()
     metric = args.metric
@@ -224,7 +225,7 @@ def main():
         print(f"[OUTER {outer_i:03d}/{len(outer_splits)}] val={val_groups} test={test_groups}")
         print("=" * 100)
 
-        # best_overall = (val_metric, NamedLoad, best_candidate, best_val_res, best_test_res, (n_train,n_val,n_test))
+        # Track the validation-selected winner for this outer split only.
         best_overall = None
 
         for li, named in enumerate(load_grid, 1):
@@ -264,7 +265,7 @@ def main():
                 print(f"  ⚠ Bad split sizes train={n_train} val={n_val} test={n_test}. Skipping.")
                 continue
 
-            # configure minima of train/test/validation count
+            # Small group-based splits can become unstable; skip underpowered folds.
             min_train = 400
             min_val = 100
             min_test = 100
@@ -272,7 +273,8 @@ def main():
                 print(f"  ⚠ Too small split train={n_train} val={n_val} test={n_test}. Skipping.")
                 continue
 
-            # Inner search — DO NOT evaluate test for all candidates
+            # Test metrics are computed only for the validation-selected model to
+            # preserve the nested-evaluation boundary.
             with bench(args.benchmark, f"search({named.name})"):
                 best_cand, best_val_res, best_test_res, _all_val = search(
                     examples,
@@ -288,7 +290,7 @@ def main():
 
             print(f"  best VAL {metric}={val_metric:.4f} | TEST {metric}={test_metric:.4f} | {best_cand.cfg}")
 
-            # Selection criterion: VAL metric only (nested CV correct)
+            # Outer-split model selection is based strictly on validation metrics.
             if best_overall is None or val_metric > best_overall[0]:
                 best_overall = (val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test))
 
@@ -350,7 +352,7 @@ def main():
         rows.append(row)
 
     # -------------------------
-    # Write CSV
+    # Write results
     # -------------------------
     if not rows:
         print("\nNo rows collected; nothing to write.")
@@ -363,7 +365,7 @@ def main():
         w.writerows(rows)
 
     # -------------------------
-    # Quick summary
+    # Aggregate summary
     # -------------------------
     test_f1s = np.array([r["test_f1_macro"] for r in rows], dtype=float)
     test_bals = np.array([r["test_balanced_accuracy"] for r in rows], dtype=float)

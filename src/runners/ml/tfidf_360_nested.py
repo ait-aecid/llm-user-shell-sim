@@ -1,4 +1,10 @@
 
+"""Nested TF-IDF benchmark runner for cross-group log classification.
+
+The script evaluates one model family across predefined load configurations and
+outer validation/test splits, with optional actor-label randomization for null
+hypothesis experiments.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +26,11 @@ from src.core.ml.benchmark import bench
 from src.ml_pipelines.tfidf_pipeline import Candidate, VectorizerConfig, search
 
 def resolve_log_files(dataset: str, log_type: str) -> Tuple[str, ...]:
+    """Map a dataset and logical source name to the concrete log file(s).
+
+    The mapping is dataset-specific because not every corpus exposes the same
+    sources. Returns the tuple consumed by ``LoadConfig``.
+    """
     allowed = {
         "Nextcloud": {"audit": "audit.log", "syslog": "syslog.log", "nextcloud": "nextcloud.log"},
         "WordPress": {"audit": "audit.log", "syslog": "syslog.log"},
@@ -40,6 +51,11 @@ def resolve_log_files(dataset: str, log_type: str) -> Tuple[str, ...]:
     return (allowed[dataset][log_type],)
 
 def parse_args():
+    """Parse the command-line interface for the nested TF-IDF benchmark.
+
+    The flags control dataset selection, model family, optional null-label
+    randomization, and parallel execution settings.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dataset",
@@ -109,10 +125,11 @@ def parse_args():
 
 
 # -------------------------
-# 1) LoadConfig grid
+# Load configuration grid
 # -------------------------
 @dataclass(frozen=True)
 class NamedLoad:
+    """Named wrapper for a loader configuration used in the outer search loop."""
     name: str
     cfg: LoadConfig
 
@@ -124,6 +141,11 @@ def make_load_configs(
     randomize_actor_labels: bool = False,
     assignment_idx: Optional[int] = None,
 ) -> List[NamedLoad]:
+    """Build the preprocessing and windowing configurations to compare.
+
+    Audit logs are evaluated with CID-based windows, while the other sources use
+    line-level views. Null-label settings are forwarded unchanged to each config.
+    """
     base = dict(
         dataset=dataset,
         log_files=resolve_log_files(dataset, log_type),
@@ -138,7 +160,6 @@ def make_load_configs(
     preprocess_mode = "soft"
 
     if log_type == "audit":
-
         configs = [
             (30, 30, "CID"),
             (30, 15, "CID"),
@@ -162,7 +183,7 @@ def make_load_configs(
 
         return out
 
-    # 2) per-line raw text
+    # Keep a per-line baseline in addition to short context windows.
     out.append(NamedLoad(
         name=f"none_{preprocess_mode}",
         cfg=LoadConfig(
@@ -172,7 +193,7 @@ def make_load_configs(
         ),
     ))
 
-    # 3) line windows
+    # Overlapping windows preserve local context without collapsing entire files.
     for ws in [1, 2, 4]:
         st = max(1, ws // 2)
         out.append(NamedLoad(
@@ -192,15 +213,17 @@ def make_load_configs(
 
 
 # -------------------------
-# 2) Candidate grid (TF-IDF + models)
-# -------------------------
-# -------------------------
-# 2) Candidate grid (TF-IDF + models)
+# Candidate grid
 # -------------------------
 def make_candidates() -> List[Candidate]:
+    """Construct the TF-IDF/model search space for one outer split.
+
+    The grid intentionally mixes strong character-level baselines with smaller
+    word-level variants and lightweight dummy references.
+    """
     candidates: List[Candidate] = []
 
-    # Dummy baselines (single lightweight vectorizer; model ignores features)
+    # Dummy baselines share a small vectorizer even though the estimator ignores it.
     dummy_vec_cfg = VectorizerConfig(
         analyzer="word",
         ngram_range=(1, 1),
@@ -222,9 +245,7 @@ def make_candidates() -> List[Candidate]:
         model_params={},
     ))
 
-    # ---------------------------------------------------------
-    # A) Character TF-IDF (usually best for logs)
-    # ---------------------------------------------------------
+    # Character n-grams are often the strongest default for heterogeneous log text.
     for ngram in [(3,5), (4,6), (5,7)]:
         for min_df in [2]:
             vec_cfg = VectorizerConfig(
@@ -238,7 +259,6 @@ def make_candidates() -> List[Candidate]:
                 binary=False,
             )
 
-            # Linear SVM
             for C in [0.3, 1.0, 3.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -246,7 +266,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"C": C, "class_weight": "balanced"},
                 ))
 
-            # Logistic Regression
             for C in [0.3, 1.0, 3.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -254,7 +273,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"C": C, "class_weight": "balanced"},
                 ))
 
-            # SGD hinge
             for alpha in [1e-5, 1e-4]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -267,7 +285,6 @@ def make_candidates() -> List[Candidate]:
                     },
                 ))
 
-            # SGD log-loss
             for alpha in [1e-5, 1e-4]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -280,14 +297,12 @@ def make_candidates() -> List[Candidate]:
                     },
                 ))
 
-            # PA-like (usually not much to tune in your current definition)
             candidates.append(Candidate(
                 vectorizer=vec_cfg,
                 model_name="pa_like",
                 model_params={},
             ))
 
-            # Ridge classifier
             for alpha in [1.0, 10.0, 100.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -295,7 +310,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"alpha": alpha},
                 ))
 
-            # Naive Bayes on char tf-idf (can work; keep small)
             for alpha in [0.01, 0.1, 1.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -313,9 +327,7 @@ def make_candidates() -> List[Candidate]:
                     model_params={"alpha": alpha},
                 ))
 
-    # ---------------------------------------------------------
-    # B) Word TF-IDF (sometimes helps)
-    # ---------------------------------------------------------
+    # Word features remain useful as a complementary baseline for cleaner sources.
     for ngram in [(1, 1), (1, 2)]:
         for min_df in [2]:
             vec_cfg = VectorizerConfig(
@@ -329,7 +341,6 @@ def make_candidates() -> List[Candidate]:
                 binary=False,
             )
 
-            # Logistic Regression
             for C in [0.3, 1.0, 3.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -337,7 +348,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"C": C, "class_weight": "balanced"},
                 ))
 
-            # Linear SVM
             for C in [0.3, 1.0, 3.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -345,7 +355,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"C": C, "class_weight": "balanced"},
                 ))
 
-            # SGD hinge
             for alpha in [1e-5, 1e-4]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -358,7 +367,6 @@ def make_candidates() -> List[Candidate]:
                     },
                 ))
 
-            # SGD log-loss
             for alpha in [1e-5, 1e-4]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -371,14 +379,12 @@ def make_candidates() -> List[Candidate]:
                     },
                 ))
 
-            # PA-like
             candidates.append(Candidate(
                 vectorizer=vec_cfg,
                 model_name="pa_like",
                 model_params={},
             ))
 
-            # Ridge
             for alpha in [1.0, 10.0, 100.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -386,7 +392,6 @@ def make_candidates() -> List[Candidate]:
                     model_params={"alpha": alpha},
                 ))
 
-            # NB family (word tf-idf is their comfort zone)
             for alpha in [0.01, 0.1, 1.0]:
                 candidates.append(Candidate(
                     vectorizer=vec_cfg,
@@ -399,9 +404,7 @@ def make_candidates() -> List[Candidate]:
                     model_params={"alpha": alpha},
                 ))
 
-    # ---------------------------------------------------------
-    # C) BernoulliNB: use binary features (important!)
-    # ---------------------------------------------------------
+    # BernoulliNB is evaluated separately with binary indicators rather than TF-IDF.
     for ngram in [(1, 2)]:
         for min_df in [2]:
             vec_cfg_bin = VectorizerConfig(
@@ -433,6 +436,7 @@ def _safe_float(x: object) -> float:
 
 
 def _resolve_out_csv(path: str) -> str:
+    """Normalize the CSV destination and ensure the parent directory exists."""
     p = Path(path)
     if str(p.parent) == ".":
         p = Path("results") / p
@@ -454,6 +458,12 @@ def _run_one_outer_split(
     randomize_actor_labels: bool,
     assignment_idx: Optional[int],
 ) -> Optional[Dict[str, object]]:
+    """Run model selection and evaluation for one outer split.
+
+    Each outer split searches over load configurations on the validation groups,
+    then reports the corresponding test result for the best validation setting.
+    Returns one CSV row, or ``None`` when no valid configuration survives.
+    """
     print("\n" + "=" * 100)
     print(f"[OUTER {outer_i:03d}/{total_outer}] val={val_groups} test={test_groups}")
     print("=" * 100)
@@ -489,6 +499,8 @@ def _run_one_outer_split(
         y = np.array([e.label for e in examples], dtype=object)
         groups = np.array([e.group for e in examples], dtype=object)
 
+        # Validation and test groups are fixed at the outer level to prevent
+        # tuning decisions from leaking across actor partitions.
         split = make_splits(
             y,
             groups=groups,
@@ -504,7 +516,9 @@ def _run_one_outer_split(
             print(f"  ⚠ Bad split sizes train={n_train} val={n_val} test={n_test}. Skipping.")
             continue
 
-        min_train = 200 # changed to make syslog work
+        # These thresholds keep fragile tiny splits out of the comparison while
+        # still allowing the smaller syslog partitions to remain evaluable.
+        min_train = 200
         min_val = 100
         min_test = 100
         if n_train < min_train or n_val < min_val or n_test < min_test:
@@ -521,6 +535,8 @@ def _run_one_outer_split(
                 verbose=False,
             )
 
+        # Outer-model selection is based only on validation performance; the
+        # paired test score is carried along for the final unbiased summary.
         val_f1 = _safe_float(getattr(best_val_res, "f1_macro", np.nan))
         val_bal = _safe_float(getattr(best_val_res, "balanced_accuracy", np.nan))
         test_f1 = _safe_float(getattr(best_test_res, "f1_macro", np.nan))
@@ -589,9 +605,15 @@ def _run_one_outer_split(
 
 
 def main():
+    """Execute the full nested benchmark and write one row per outer split.
 
+    The runner supports the standard evaluation setting and a null setting in
+    which actor labels are reassigned via a fixed enumerated permutation.
+    """
     args = parse_args()
 
+    # Null-label runs must use an explicit permutation index so the evaluation
+    # is reproducible and can be matched across models.
     if args.randomize_actor_labels and args.assignment_idx is None:
         raise ValueError(
             "--randomize_actor_labels requires --assignment_idx"
@@ -615,6 +637,8 @@ def main():
     out_csv = _resolve_out_csv(args.out_csv)
     n_jobs = max(1, int(args.n_jobs))
 
+    # Outer splits encode the human/AI group pairings used for held-out
+    # evaluation, optionally under a randomized actor-label assignment.
     all_outer_splits = make_val_test_splits(
         args.dataset,
         randomize_actor_labels=args.randomize_actor_labels,
@@ -635,7 +659,6 @@ def main():
     if not cand_grid:
         raise RuntimeError(f"No candidates for model {model_name}")
     
-
     print(f"Dataset     : {args.dataset}")
     print(f"Log type    : {args.log_type}")
     print("MODEL:", model_name)
@@ -694,7 +717,7 @@ def main():
                     rows.append(row)
 
     # -------------------------
-    # Write CSV
+    # Write results
     # -------------------------
     if not rows:
         print("\nNo rows collected; nothing to write.")
@@ -709,7 +732,7 @@ def main():
         w.writerows(rows)
 
     # -------------------------
-    # Quick summary
+    # Aggregate summary
     # -------------------------
     test_f1s = np.array([r["test_f1_macro"] for r in rows], dtype=float)
     test_bals = np.array([r["test_balanced_accuracy"] for r in rows], dtype=float)

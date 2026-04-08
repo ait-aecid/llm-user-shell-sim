@@ -1,1 +1,1 @@
-"""Scenario packages for Nextcloud and WordPress break/fix flows."""
+"""Break/fix scenario packages for the Nextcloud and WordPress agent tasks."""

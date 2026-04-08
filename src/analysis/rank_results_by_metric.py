@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Rank model result files by a selected metric and visualize the ordering.
+
+The script aggregates per-run metric values from matching CSV files, sorts models
+by their mean score, and optionally compares the top three with paired Wilcoxon tests.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -8,6 +14,11 @@ from pathlib import Path
 
 
 def find_matching_csvs(results_dir: Path, split_size: int) -> list[Path]:
+    """Return result CSVs whose filenames encode the requested split size.
+
+    The match is purely name-based and assumes the split size appears as
+    `_{split_size}_` in each relevant filename.
+    """
     pattern = f"_{split_size}_"
     return sorted(
         path
@@ -17,6 +28,11 @@ def find_matching_csvs(results_dir: Path, split_size: int) -> list[Path]:
 
 
 def load_metric_values(csv_path: Path, metric: str) -> list[float]:
+    """Load all non-empty values for one metric column from a result CSV.
+
+    Empty entries are skipped so partially populated result tables remain usable.
+    Raises `ValueError` when the metric is missing or has no valid numeric values.
+    """
     values: list[float] = []
 
     with csv_path.open(newline="") as handle:
@@ -46,11 +62,17 @@ def compute_mean(values: list[float]) -> float:
 
 
 def derive_output_path(results_dir: Path, split_size: int, metric: str) -> Path:
+    """Construct the default output path for the ranked boxplot PDF."""
     safe_metric = metric.replace("/", "_")
     return results_dir / f"boxplot_ranked_{safe_metric}_{split_size}.pdf"
 
 
 def format_model_label(filename: str) -> str:
+    """Convert a result filename into a presentation-friendly model label.
+
+    The parser assumes filenames start with a model identifier before any
+    `_nested_...` suffix and strips trailing numeric run markers when present.
+    """
     stem = Path(filename).stem
     model_part = stem.split("_nested_", maxsplit=1)[0]
     model_tokens = model_part.split("_")
@@ -87,6 +109,7 @@ def format_model_label(filename: str) -> str:
         "random_forest": "Random Forest",
     }
 
+    # Preserve established labels for common model names used across experiments.
     if normalized in label_map:
         return label_map[normalized]
 
@@ -116,6 +139,7 @@ def format_model_label(filename: str) -> str:
 
 
 def format_metric_label(metric: str) -> str:
+    """Map internal metric column names to concise plot labels."""
     metric_map = {
         "test_mcc": "MCC",
         "mcc": "MCC",
@@ -143,6 +167,11 @@ def create_ranked_boxplot(
     split_size: int,
     output_path: Path,
 ) -> None:
+    """Create a horizontal boxplot ordered by mean metric value.
+
+    Each row is expected to contain a filename, its mean score, and the underlying
+    per-run values that define the boxplot distribution.
+    """
     try:
         import matplotlib.pyplot as plt
     except ModuleNotFoundError as exc:
@@ -181,8 +210,10 @@ def create_ranked_boxplot(
     ax.set_xlabel(format_metric_label(metric))
     ax.set_ylabel("")
     ax.grid(axis="x", linestyle="--", alpha=0.4)
+    # The best model is sorted to the top for easier visual comparison.
     ax.invert_yaxis()
 
+    # Annotate means directly because boxplots emphasize distributions over ranking.
     for position, mean_value in enumerate(means, start=1):
         text_x = min(mean_value + 0.015, 0.98)
         ax.text(
@@ -204,6 +235,11 @@ def create_ranked_boxplot(
 def run_wilcoxon_top_three(
     rows: list[tuple[str, float, list[float]]],
 ) -> list[tuple[str, str, float, float]]:
+    """Run pairwise Wilcoxon signed-rank tests for the top three ranked models.
+
+    The test is applied to paired per-run metric values, so each compared model
+    must contribute the same number of observations.
+    """
     try:
         from scipy.stats import wilcoxon
     except ModuleNotFoundError as exc:
@@ -215,6 +251,7 @@ def run_wilcoxon_top_three(
     top_rows = rows[:3]
     results: list[tuple[str, str, float, float]] = []
 
+    # Restrict comparisons to the leading models to keep the follow-up test targeted.
     for (name_a, _, values_a), (name_b, _, values_b) in combinations(top_rows, 2):
         if len(values_a) != len(values_b):
             raise ValueError(
@@ -229,6 +266,7 @@ def run_wilcoxon_top_three(
 
 
 def main() -> None:
+    """Parse arguments, rank matching result files, and report the summary outputs."""
     parser = argparse.ArgumentParser(
         description=(
             "Find result CSVs for a given split size, compute the mean of a metric, "
@@ -266,6 +304,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # ---- Load and rank results ----
     results_dir = Path(args.results_dir)
     csv_paths = find_matching_csvs(results_dir, args.split_size)
     if not csv_paths:
@@ -280,12 +319,15 @@ def main() -> None:
         rows.append((csv_path.name, mean_value, metric_values))
 
     rows.sort(key=lambda item: item[1], reverse=not args.ascending)
+
+    # ---- Create outputs ----
     output_path = Path(args.output) if args.output else derive_output_path(
         results_dir, args.split_size, args.metric
     )
     create_ranked_boxplot(rows, args.metric, args.split_size, output_path)
     wilcoxon_results = run_wilcoxon_top_three(rows) if len(rows) >= 3 else []
 
+    # ---- Print ranked summary ----
     print(f"Metric: {args.metric}")
     print(f"Split size: {args.split_size}")
     print(f"Matched files: {len(rows)}")

@@ -1,3 +1,9 @@
+"""Browser-based MCP runner for Nextcloud tasks.
+
+This module connects an OpenAI chat loop to MCP tools, with special handling
+for verbose browser snapshots so tool traces remain usable within context limits.
+"""
+
 import asyncio
 import sys
 import os
@@ -12,29 +18,36 @@ from mcp.client.stdio import stdio_client
 from openai import OpenAI  # OpenAI SDK
 from dotenv import load_dotenv
 
-# ---------- Hyperparameters / Config ----------
+# ---------- Configuration ----------
 DEBUG_FLAG = False
 MODEL = "gpt-4.1-mini"
 TEMPERATURE = 0.1
 
 
 
-# --- Load .env BEFORE reading env vars ---
+# ---------- Environment ----------
+# Load environment variables before resolving model configuration.
 load_dotenv()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", MODEL)
 
-# ---------- Token + snapshot helpers (unchanged) ----------
+# ---------- Snapshot and token helpers ----------
 
 def _est_tokens(text: str) -> int:
-    """Very rough token estimate: ~1 token per 4 chars."""
+    """Estimate token count from character length.
+
+    This is intentionally rough and is only used to keep message history within
+    a conservative budget.
+    """
     return max(1, len(text) // 4)
 
 def _truncate_text(s: str, max_chars: int) -> str:
+    """Clip long text blocks to a fixed character budget."""
     if len(s) <= max_chars:
         return s
     return s[:max_chars] + " …"
 
 def _extract_yaml_block(full_text: str) -> str | None:
+    """Extract the first fenced YAML block from a tool response, if present."""
     start = full_text.find("```yaml")
     if start == -1:
         return None
@@ -54,9 +67,15 @@ def _compact_snapshot_yaml(
     keep_max_lines: int = 1200, # param
     line_char_cap: int = 280 # param
 ) -> str:
+    """Reduce a page snapshot to the most informative lines.
+
+    The filter keeps common interactive or structural roles and preserves a small
+    prefix so the summary still has context even when role matching is sparse.
+    """
     lines = yaml_text.splitlines()
     kept: List[str] = []
     for ln in lines:
+        # Keep likely actionable UI elements and a short prefix for orientation.
         if _KEEP_ROLES_RE.search(ln) or len(kept) < 20:
             kept.append(_truncate_text(ln, line_char_cap))
         if len(kept) >= keep_max_lines:
@@ -64,7 +83,11 @@ def _compact_snapshot_yaml(
     return "\n".join(kept)
 
 def _summarize_snapshot_text(full_text: str, max_chars: int = 3000) -> str: # param
-    """Return URL/Title header + compacted YAML section."""
+    """Build a compact browser snapshot summary.
+
+    The summary preserves page identity and a reduced YAML snapshot so the model
+    can reason about the page without carrying the full browser dump.
+    """
     url = None
     title = None
     for line in full_text.splitlines():
@@ -89,12 +112,15 @@ def _summarize_snapshot_text(full_text: str, max_chars: int = 3000) -> str: # pa
 
 def _mcp_content_to_text_blocks(content_list: List[Any], include_full_snapshots: bool = False) -> List[str]:
     """
-    Similar to the Anthropic normalizer but return plain strings for OpenAI tool replies.
-    We'll JSON-serialize these when sending back via the 'tool' role message.
+    Normalize MCP tool content into plain text blocks for OpenAI tool replies.
+
+    Browser tool outputs can contain both a structured result and a large page
+    snapshot. When possible, prefer the explicit result and only retain a compact
+    snapshot fallback.
     """
     out: List[str] = []
 
-    # helper: extract the "### Result ..." blob if present (fenced or unfenced)
+    # Prefer the tool's explicit result payload over the surrounding browser trace.
     def _extract_result_blob(txt: str) -> str | None:
         m = re.search(
             r"### Result\s+```?json?\s*(.*?)```|### Result\s*([\s\S]*?)\n###",
@@ -114,11 +140,12 @@ def _mcp_content_to_text_blocks(content_list: List[Any], include_full_snapshots:
             txt = item.get("text", "") or ""
 
         if txt is not None:
-            # If the tool text contains a Page Snapshot, prefer the actual Result first
+            # Snapshots are useful for recovery, but they are much noisier than the
+            # tool's intended return value and consume context quickly.
             if "Page Snapshot:" in txt:
                 blob = _extract_result_blob(txt)
                 if blob:
-                    # We got a real result — only keep that
+                    # Keep the result payload when the tool already exposed one.
                     out.append(_truncate_text(blob, 8000))
                     continue  # skip snapshot entirely
                 # else, no result → keep snapshot (full or compact)
@@ -141,17 +168,17 @@ def _mcp_content_to_text_blocks(content_list: List[Any], include_full_snapshots:
 
 def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: int = 6000) -> List[Dict[str, Any]]:
     """
-    Keep most recent content while staying under a rough token budget.
-    - Always keep system messages (untrimmed, at the front).
-    - Treat an assistant tool-call turn + its following tool replies as an atomic bundle.
-    - Trim from the end by whole bundles so tool messages always have their parent.
+    Keep recent conversation history within a rough token budget.
+
+    System and user messages are preserved, and assistant tool calls are bundled
+    with their tool replies so trimming never drops the causal context mid-turn.
     """
-    # 0) keep system messages untouched
+    # Preserve instructions and the active user request even under heavy trimming.
     system_user_msgs = [m for m in messages if m.get("role") == "system" or m.get("role") == "user"]
     non_system = [m for m in messages if m.get("role") not in {"system", "user"}]
 
-    # helper: rough token count of one message
     def _msg_tokens(msg: Dict[str, Any]) -> int:
+        """Estimate the size of a chat message across supported content shapes."""
         parts: List[str] = []
         c = msg.get("content")
         if isinstance(c, str):
@@ -164,38 +191,32 @@ def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: i
                     parts.append(str(blk))
         elif isinstance(c, dict):
             parts.append(str(c))
-        # include a small header overhead
         return sum(_est_tokens(p) for p in parts) + 12
 
-    # 1) Build bundles (oldest -> newest)
+    # Tool replies are only meaningful together with the assistant message that
+    # requested them, so trim these units atomically.
     bundles: List[List[Dict[str, Any]]] = []
     i = 0
     n = len(non_system)
     while i < n:
         m = non_system[i]
         if m.get("role") == "assistant" and m.get("tool_calls"):
-            # assistant tool call bundle
             bundle = [m]
-            # collect the set of tool_call_ids
             ids = set()
             for tc in m.get("tool_calls", []) or []:
-                # tc can be dict or pydantic-like; handle both
                 if isinstance(tc, dict):
                     ids.add(tc.get("id"))
                 else:
                     ids.add(getattr(tc, "id", None))
             i += 1
-            # attach subsequent tool messages that reference those ids
             while i < n and non_system[i].get("role") == "tool" and (not ids or non_system[i].get("tool_call_id") in ids):
                 bundle.append(non_system[i])
                 i += 1
             bundles.append(bundle)
         else:
-            # single-message bundle
             bundles.append([m])
             i += 1
 
-    # 2) Trim from the end by bundles
     kept: List[List[Dict[str, Any]]] = []
     total_tokens = 0
     for bundle in reversed(bundles):
@@ -205,7 +226,6 @@ def _trim_messages_to_budget(messages: List[Dict[str, Any]], max_input_tokens: i
         kept.append(bundle)
         total_tokens += bundle_tokens
 
-    # 3) Reassemble: system + kept bundles (restore chronological order)
     kept = list(reversed(kept))
     flat_kept = [m for bundle in kept for m in bundle]
     return system_user_msgs + flat_kept
@@ -227,10 +247,11 @@ SYSTEM_PROMPT = (
     "Adjust the selector or verify using the snapshot.\n"
 )
 
-# ----------------- Client (OpenAI) -----------------
+# ---------- OpenAI-MCP client ----------
 
 class MCPClient:
     def __init__(self):
+        """Initialize the OpenAI client and async resources for MCP sessions."""
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
         self.openai = OpenAI()  # uses OPENAI_API_KEY from env
@@ -238,6 +259,7 @@ class MCPClient:
         self.write = None
 
     async def connect_via_command(self, command: str, args: list[str] | None = None, env: dict | None = None):
+        """Start an MCP server from a command and initialize the session."""
         server_params = StdioServerParameters(command=command, args=args or [], env=env)
         stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
         self.stdio, self.write = stdio_transport
@@ -248,6 +270,7 @@ class MCPClient:
             print("\nConnected to server with tools:", [t.name for t in (resp.tools or [])])
 
     async def connect_to_server(self, server_script_path: str):
+        """Launch a local Python or Node MCP server script and connect to it."""
         is_python = server_script_path.endswith(".py")
         is_js = server_script_path.endswith(".js")
         if not (is_python or is_js):
@@ -263,7 +286,7 @@ class MCPClient:
             print("\nConnected to server with tools:", [t.name for t in (resp.tools or [])])
 
     def _mcp_tools_to_openai(self, tools_resp) -> List[Dict[str, Any]]:
-        """Convert MCP tool descriptions to OpenAI function-calling schema."""
+        """Translate MCP tool metadata into OpenAI function-calling schema."""
         out = []
         for t in (tools_resp.tools or []):
             out.append({
@@ -277,11 +300,16 @@ class MCPClient:
         return out
 
     async def process_query(self, query: str) -> str:
-        # 1) Build OpenAI tools list
+        """Run one user query through the OpenAI tool loop and return the final text.
+
+        The loop alternates between model calls and MCP tool execution, while
+        compacting history to keep browser-heavy traces within the context window.
+        """
+        # Refresh tool metadata per query so the model sees the current MCP surface.
         resp = await self.session.list_tools()
         openai_tools = self._mcp_tools_to_openai(resp)
 
-        # 2) Start messages with a system prompt (OpenAI style)
+        # Keep the conversation in standard chat-completions format.
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": query},
@@ -290,7 +318,7 @@ class MCPClient:
 
         for _ in range(20):
 
-            # Trim before each call
+            # Browser traces can grow quickly, so trim before every model step.
             messages = _trim_messages_to_budget(messages, max_input_tokens=6000)
 
             completion = self.openai.chat.completions.create(
@@ -304,20 +332,20 @@ class MCPClient:
             msg = completion.choices[0].message
             tool_calls = msg.tool_calls or []
 
-            # If no tool calls, we got a plain answer
+            # A plain assistant message terminates the tool loop.
             if not tool_calls:
                 if msg.content:
                     final_text.append(msg.content)
                 break
 
-            # Append assistant message containing the tool_calls (required context)
+            # Preserve the exact tool-call turn so subsequent tool replies remain grounded.
             messages.append({
                 "role": "assistant",
                 "content": msg.content or "",
                 "tool_calls": [tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in tool_calls],
             })
 
-            # Execute each requested tool in order and send results back
+            # Execute tool calls sequentially to preserve model-intended interaction order.
             for call in tool_calls:
                 name = call.function.name
                 args = {}
@@ -325,7 +353,7 @@ class MCPClient:
                     try:
                         args = json.loads(call.function.arguments)
                     except Exception:
-                        # if the model produced invalid JSON, send the raw string
+                        # Keep malformed arguments visible rather than silently dropping them.
                         args = {"__raw_arguments__": call.function.arguments}
 
                 if DEBUG_FLAG:
@@ -341,12 +369,11 @@ class MCPClient:
                         print("\n\n")
 
                     text_blocks = _mcp_content_to_text_blocks(result.content, include_full_snapshots=False)
-                    # Serialize to a compact JSON string for the tool message
+                    # Tool messages are serialized as JSON strings for consistent round-tripping.
                     tool_content = json.dumps(text_blocks, ensure_ascii=False)
                 except Exception as e:
                     tool_content = json.dumps([f"Tool error: {e}"], ensure_ascii=False)
 
-                # Tool result goes in a 'tool' role message linked by tool_call_id
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call.id,
@@ -356,6 +383,7 @@ class MCPClient:
         return "\n".join(final_text) if final_text else "(no text response)"
 
     async def chat_loop(self):
+        """Run an interactive query loop until exit or a non-debug completion."""
         while True:
             try:
                 q = input("\nQuery: ").strip()
@@ -363,7 +391,7 @@ class MCPClient:
                     break
                 resp = await self.process_query(q)
                 print("\n" + resp)
-                # only loop in debug mode
+                # In normal mode the script handles a single task and exits.
                 if not DEBUG_FLAG:
                     break
             except (KeyboardInterrupt, EOFError):
@@ -373,9 +401,11 @@ class MCPClient:
                 print(f"\nError: {e}")
 
     async def cleanup(self):
+        """Close all async resources associated with the MCP session."""
         await self.exit_stack.aclose()
 
 async def main():
+    """Launch the MCP client with either Playwright or a local server script."""
     client = MCPClient()
     try:
         if len(sys.argv) == 2 and sys.argv[1] == "--playwright":
@@ -395,5 +425,5 @@ async def main():
         await client.cleanup()
 
 if __name__ == "__main__":
-    #uv run browser_agent.py --playwright
+    # Example: uv run browser_agent.py --playwright
     asyncio.run(main())

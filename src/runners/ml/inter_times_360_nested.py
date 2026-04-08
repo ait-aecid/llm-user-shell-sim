@@ -1,22 +1,9 @@
-# experiments/inter_times_360_nested.py
-#
-# Run:
-#   python -m experiments.inter_times_360_nested --model gnb
-#
-# Debug (only first 5 outer splits):
-#   python -m experiments.inter_times_360_nested --model gnb --limit_outer 5
-#
-# Choose metric used for selection:
-#   python -m experiments.inter_times_360_nested --model svm --metric f1_macro
-#
-# What it does:
-# - Outer loop: 360 (val_groups, test_groups) splits from core.val_test_combs
-# - Inner loop (per outer split):
-#     - loop over LoadConfig grid
-#     - run inter_times_pipeline.search() over hyperparams of ONE chosen model
-#     - pick best (LoadConfig + hyperparams) by VAL metric ONLY
-#     - record VAL + TEST (f1_macro + balanced_accuracy + more)
-# - Save results to CSV
+"""Nested evaluation for inter-event time features across predefined group splits.
+
+For each outer (validation, test) split, the script searches over windowing choices
+and hyperparameters, selects by validation performance only, and records held-out
+test metrics for the selected configuration.
+"""
 
 from __future__ import annotations
 
@@ -38,6 +25,11 @@ from src.core.ml.benchmark import bench
 from src.ml_pipelines.inter_times_pipeline import Candidate, search
 
 def resolve_log_files(dataset: str, log_type: str) -> Tuple[str, ...]:
+    """Map a dataset/log-type pair to the concrete log file(s) to load.
+
+    The mapping is intentionally explicit because not every dataset exposes the
+    same logical log sources. Returns a tuple for direct use in `LoadConfig`.
+    """
     allowed = {
         "Nextcloud": {"audit": "audit.log", "syslog": "syslog.log", "nextcloud": "nextcloud.log"},
         "WordPress": {"audit": "audit.log", "syslog": "syslog.log"},
@@ -57,10 +49,13 @@ def resolve_log_files(dataset: str, log_type: str) -> Tuple[str, ...]:
 
     return (allowed[dataset][log_type],)
 
-# -------------------------
-# Args
-# -------------------------
+# ---- CLI ----
 def parse_args():
+    """Parse command-line options for the nested evaluation run.
+
+    The model family is fixed per run, while preprocessing variants and model
+    hyperparameters are tuned inside the nested search.
+    """
     p = argparse.ArgumentParser()
     p.add_argument(
         "--dataset",
@@ -121,6 +116,11 @@ def parse_args():
 
 
 def _safe_float(x: object) -> float:
+    """Convert a metric-like value to float and fall back to `nan` on failure.
+
+    This keeps CSV writing and summary aggregation robust to missing or
+    unavailable metrics.
+    """
     try:
         return float(x)  # type: ignore[arg-type]
     except Exception:
@@ -128,6 +128,11 @@ def _safe_float(x: object) -> float:
 
 
 def _resolve_out_csv(path: str) -> str:
+    """Normalize the output path and ensure its parent directory exists.
+
+    Bare filenames are written under `results/` to keep experiment outputs in a
+    predictable location. Returns the resolved path as a string.
+    """
     p = Path(path)
     if str(p.parent) == ".":
         p = Path("results") / p
@@ -135,16 +140,20 @@ def _resolve_out_csv(path: str) -> str:
     return str(p)
 
 
-# -------------------------
-# 1) LoadConfig grid
-# -------------------------
+# ---- Load configuration grid ----
 @dataclass(frozen=True)
 class NamedLoad:
+    """Pair a human-readable configuration name with a `LoadConfig` instance."""
     name: str
     cfg: LoadConfig
 
 
 def make_load_configs(*, clip_max: float, dataset: str, log_type: str) -> List[NamedLoad]:
+    """Build the preprocessing grid for inter-time feature extraction.
+
+    The grid varies window size, stride, and time scaling while keeping the
+    dataset and log source fixed for a given run.
+    """
     base = dict(
         dataset=dataset,
         log_files=resolve_log_files(dataset, log_type),
@@ -158,7 +167,7 @@ def make_load_configs(*, clip_max: float, dataset: str, log_type: str) -> List[N
 
     out: List[NamedLoad] = []
 
-    for window_size in [1, 5, 10, 25, 50]: # added here to make syslog run
+    for window_size in [1, 5, 10, 25, 50]:
         for stride in [window_size, max(1, window_size // 2)]:
             out.append(NamedLoad(
                 name=f"seconds_ws{window_size}_st{stride}",
@@ -184,10 +193,13 @@ def make_load_configs(*, clip_max: float, dataset: str, log_type: str) -> List[N
     return out
 
 
-# -------------------------
-# 2) Candidates for ONE model
-# -------------------------
+# ---- Model candidate grid ----
 def make_model_candidates(model: str) -> List[Candidate]:
+    """Return the hyperparameter grid for one fixed model family.
+
+    Model identity is treated as part of the experimental design rather than a
+    tuned choice, so the search only spans parameters within the selected family.
+    """
     candidates: List[Candidate] = []
 
     if model == "dummy_most_frequent":
@@ -286,6 +298,12 @@ def _run_one_outer_split(
     log_type: str,
     benchmark: bool,
 ) -> Optional[Dict[str, object]]:
+    """Evaluate one outer validation/test split under nested model selection.
+
+    For the given group split, the function searches over preprocessing and
+    model hyperparameters using validation data only, then records metrics for
+    the selected configuration on both validation and held-out test data.
+    """
     print("\n" + "=" * 100)
     print(f"[OUTER {outer_i:03d}/{total_outer}] val={val_groups} test={test_groups}")
     print("=" * 100)
@@ -317,6 +335,8 @@ def _run_one_outer_split(
         y = np.array([e.label for e in examples], dtype=object)
         groups = np.array([e.group for e in examples], dtype=object)
 
+        # The outer split is defined at the group level so the chosen human/AI
+        # sources stay isolated between validation and test.
         split = make_splits(
             y,
             groups=groups,
@@ -331,7 +351,9 @@ def _run_one_outer_split(
             print(f"  ⚠ Bad split sizes train={n_train} val={n_val} test={n_test}. Skipping.")
             continue
 
-        min_train = 200 # to make syslog work
+        # Small splits can make some outer combinations too unstable to compare
+        # meaningfully, especially for sparse log sources.
+        min_train = 200
         min_val = 100
         min_test = 100
         if n_train < min_train or n_val < min_val or n_test < min_test:
@@ -339,6 +361,8 @@ def _run_one_outer_split(
             continue
 
         with bench(benchmark, f"search({named.name})"):
+            # Test is evaluated only for the validation-selected candidate to
+            # preserve the nested-CV separation between selection and reporting.
             best_cand, best_val_res, best_test_res, _all_val = search(
                 examples,
                 split,
@@ -353,6 +377,8 @@ def _run_one_outer_split(
 
         print(f"  best VAL {metric}={val_metric:.4f} | TEST {metric}={test_metric:.4f} | {best_cand}")
 
+        # The outer winner is the configuration with the strongest validation
+        # score; test performance is recorded but never used for selection.
         if best_overall is None or val_metric > best_overall[0]:
             best_overall = (val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test))
 
@@ -411,10 +437,13 @@ def _run_one_outer_split(
     return row
 
 
-# -------------------------
-# 3) Main
-# -------------------------
+# ---- Main entry point ----
 def main():
+    """Run the full nested evaluation over all requested outer splits.
+
+    The script executes each outer split serially or in parallel, writes one row
+    per completed split, and prints a compact summary across test metrics.
+    """
     args = parse_args()
     model = args.model
     metric = args.metric
@@ -488,9 +517,7 @@ def main():
                 if row is not None:
                     rows.append(row)
 
-    # -------------------------
-    # Write CSV
-    # -------------------------
+    # ---- Write CSV ----
     if not rows:
         print("\nNo rows collected; nothing to write.")
         return
@@ -503,9 +530,7 @@ def main():
         w.writeheader()
         w.writerows(rows)
 
-    # -------------------------
-    # Quick summary
-    # -------------------------
+    # ---- Quick summary ----
     test_f1s = np.array([r["test_f1_macro"] for r in rows], dtype=float)
     test_bals = np.array([r["test_balanced_accuracy"] for r in rows], dtype=float)
 

@@ -1,4 +1,9 @@
 
+"""Run nested validation/test evaluation for the LLM-360 RAG pipeline.
+
+The script selects preprocessing and retrieval settings by validation score within
+each outer split and reports the corresponding held-out test result once per split.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +28,11 @@ from src.ml_pipelines.llm_pipeline import Candidate, RAGLLMConfig, search
 # Args
 # -------------------------
 def parse_args():
+    """Parse CLI arguments for the nested LLM-360 evaluation runner.
+
+    The options control dataset selection, the outer-split subset to run, and
+    whether uncertain retrieval decisions may fall back to the chat model.
+    """
     p = argparse.ArgumentParser()
     p.add_argument(
         "--dataset",
@@ -49,6 +59,11 @@ def parse_args():
 
 
 def _safe_float(x: object) -> float:
+    """Convert a value to float while preserving failures as NaN.
+
+    This keeps downstream metric aggregation robust when a result object is
+    missing a field or exposes a non-numeric placeholder.
+    """
     try:
         return float(x)  # type: ignore[arg-type]
     except Exception:
@@ -56,6 +71,11 @@ def _safe_float(x: object) -> float:
 
 
 def _resolve_out_csv(path: str) -> str:
+    """Normalize the output CSV path and create its parent directory.
+
+    Bare filenames are written under `results/` so repeated runs default to a
+    consistent output location.
+    """
     p = Path(path)
     if str(p.parent) == ".":
         p = Path("results") / p
@@ -68,6 +88,7 @@ def _resolve_out_csv(path: str) -> str:
 # -------------------------
 @dataclass(frozen=True)
 class NamedLoad:
+    """Pair a human-readable config name with the corresponding load settings."""
     name: str
     cfg: LoadConfig
 
@@ -76,6 +97,11 @@ class NamedLoad:
 
 
 def make_load_configs(dataset: str) -> List[NamedLoad]:
+    """Build the small preprocessing grid used in the outer evaluation.
+
+    The grid is intentionally narrow so the nested search stays interpretable
+    and computationally manageable across many outer splits.
+    """
     base = dict(
         dataset=dataset,
         log_files=("audit.log",),
@@ -87,7 +113,7 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
 
     preprocess_mode = "soft"
 
-    # 1) raw lines
+    # ---- Raw lines ----
     out.append(NamedLoad(
         name=f"none_{preprocess_mode}",
         cfg=LoadConfig(
@@ -97,7 +123,9 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
         ),
     ))
 
-    # 2) CID windows
+    # ---- CID windows ----
+    # Overlapping CID windows expose local event context without exploding the
+    # configuration space during the nested search.
     ws = 10
     st = max(1, ws // 2)
     out.append(NamedLoad(
@@ -121,8 +149,10 @@ def make_load_configs(dataset: str) -> List[NamedLoad]:
 # -------------------------
 
 def make_candidates(*, use_llm_fallback: bool) -> List[Candidate]:
-    """
-    Keep SMALL. Any LLM fallback can cost money.
+    """Construct the restricted candidate grid for retrieval and fallback.
+
+    The search space is deliberately small because each candidate is evaluated
+    repeatedly across outer splits and LLM fallback can add API cost.
     """
     candidates: List[Candidate] = []
 
@@ -133,34 +163,39 @@ def make_candidates(*, use_llm_fallback: bool) -> List[Candidate]:
                     candidates.append(
                         Candidate(
                             cfg=RAGLLMConfig(
-                                # bundling
+                                # Bundle adjacent events so retrieval operates on
+                                # short local contexts rather than single lines.
                                 bundle_size=bundle_size,
                                 bundle_strategy="fixed",
                                 sliding_stride=max(1, bundle_size // 2),
                                 drop_last_incomplete=True,
 
-                                # retrieval
+                                # Retrieval stays local-first; only uncertain
+                                # cases may escalate to the chat model.
                                 per_class_k=per_class_k,
                                 max_chars_per_retrieved=1000,
 
-                                # NEW: retrieval backend (faiss if installed, else falls back to numpy)
+                                # Use the deterministic numpy backend here to
+                                # avoid dependency-sensitive benchmark drift.
                                 retrieval_backend="numpy",
                                 faiss_hnsw_m=32,
 
-                                # local embeddings
+                                # Local embeddings drive the primary retrieval step.
                                 local_embedding_model="BAAI/bge-base-en-v1.5",
                                 local_embedding_batch_size=32,
                                 local_normalize_embeddings=True,
 
-                                # NEW: batch embeddings during prediction
+                                # Batch query embeddings to keep inference cost stable.
                                 predict_embedding_batch_size=64,
 
-                                # hybrid gating
+                                # The margin defines when retrieval is considered
+                                # too uncertain and LLM fallback is allowed.
                                 use_llm_fallback=use_llm_fallback,
                                 llm_uncertainty_margin=float(margin),
                                 score_agg=agg,
 
-                                # LLM fallback
+                                # Deterministic fallback settings keep repeated
+                                # outer-split comparisons reproducible.
                                 chat_model="gpt-4.1-mini",
                                 temperature=0.0,
                                 max_output_tokens=30,
@@ -176,6 +211,11 @@ def make_candidates(*, use_llm_fallback: bool) -> List[Candidate]:
 # 3) Main
 # -------------------------
 def main():
+    """Run nested model selection and export one result row per outer split.
+
+    Selection is based strictly on validation performance; the corresponding test
+    metrics are recorded only for the chosen configuration in each outer split.
+    """
     args = parse_args()
     metric = args.metric
     out_csv = _resolve_out_csv(args.out_csv)
@@ -199,6 +239,7 @@ def main():
 
     rows: List[Dict[str, object]] = []
 
+    # ---- Outer evaluation loop ----
     for outer_i, (val_groups, test_groups) in enumerate(outer_splits, 1):
         print("\n" + "=" * 100)
         print(f"[OUTER {outer_i:03d}/{len(outer_splits)}] val={val_groups} test={test_groups}")
@@ -207,6 +248,8 @@ def main():
         # best_overall = (val_metric, NamedLoad, best_candidate, best_val_res, best_test_res, (n_train,n_val,n_test))
         best_overall = None
 
+        # Each load configuration is evaluated under the same human/AI group
+        # assignment so preprocessing is selected within the nested protocol.
         for li, named in enumerate(load_grid, 1):
             print(f"\n  --- LoadConfig [{li:02d}/{len(load_grid)}] {named.name} ---")
 
@@ -229,6 +272,8 @@ def main():
             y = np.array([e.label for e in examples], dtype=object)
             groups = np.array([e.group for e in examples], dtype=object)
 
+            # `make_val_test_splits` defines the outer human/AI groups; this call
+            # projects those group choices onto the example-level indices.
             split = make_splits(
                 y,
                 groups=groups,
@@ -244,6 +289,8 @@ def main():
                 print(f"  ⚠ Bad split sizes train={n_train} val={n_val} test={n_test}. Skipping.")
                 continue
 
+            # Skip degenerate outer folds so validation-based selection is not
+            # driven by very small sample counts.
             min_train = 400
             min_val = 100
             min_test = 100
@@ -251,7 +298,8 @@ def main():
                 print(f"  ⚠ Too small split train={n_train} val={n_val} test={n_test}. Skipping.")
                 continue
 
-            # Inner search — DO NOT evaluate test for all candidates
+            # Nested evaluation constraint: search on validation only and expose
+            # test performance only for the configuration selected in this fold.
             with bench(args.benchmark, f"search({named.name})"):
                 best_cand, best_val_res, best_test_res, _all_val = search(
                     examples,
@@ -267,7 +315,8 @@ def main():
 
             print(f"  best VAL {metric}={val_metric:.4f} | TEST {metric}={test_metric:.4f} | {best_cand.cfg}")
 
-            # Selection criterion: VAL metric only (nested CV correct)
+            # Selection is based only on validation performance to keep the test
+            # set untouched until after model/configuration choice.
             if best_overall is None or val_metric > best_overall[0]:
                 best_overall = (val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test))
 
@@ -277,6 +326,7 @@ def main():
 
         val_metric, named, best_cand, best_val_res, best_test_res, (n_train, n_val, n_test) = best_overall
 
+        # ---- Persist selected outer-fold result ----
         row = {
             "outer_i": outer_i,
             "val_human": val_groups[0],

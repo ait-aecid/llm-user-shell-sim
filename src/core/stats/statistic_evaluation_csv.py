@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Persist summary statistics for AI vs. human distance evaluations as CSV rows.
+
+The file stores both flattened scalar metrics and JSON-encoded structured outputs so
+downstream analysis can use a simple tabular format without losing detailed results.
+"""
+
 import csv
 import json
 from datetime import datetime, timezone
@@ -7,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 
+# ---- Output schema ----
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "results" / "statistic_evaluation.csv"
 
@@ -45,6 +52,11 @@ CSV_COLUMNS = [
 
 
 def _json_dumps(value: Any) -> str:
+    """Serialize nested results deterministically for stable CSV storage.
+
+    Keys are sorted and output is ASCII-safe so repeated runs remain easy to diff
+    and robust across downstream tooling.
+    """
     return json.dumps(value, sort_keys=True, ensure_ascii=True)
 
 
@@ -57,9 +69,16 @@ def append_statistic_evaluation_row(
     group_stats: dict[str, Any],
     output_path: str | Path = DEFAULT_OUTPUT_PATH,
 ) -> Path:
+    """Append one evaluation result to the statistics CSV and return its path.
+
+    The input is expected to follow the grouped summary structure produced by the
+    statistical evaluation pipeline, with both scalar summaries and test outputs.
+    """
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
 
+    # Keep the nested outputs intact for later inspection while also exposing the
+    # most commonly queried summary metrics as flat columns.
     summaries = group_stats["group_summaries"]
     silhouette = group_stats["silhouette"]
     tests = group_stats["mannwhitney"]
@@ -96,6 +115,7 @@ def append_statistic_evaluation_row(
         "mw_ai_human_vs_human_human_cliffs_delta": tests["ai_human_vs_human_human"]["cliffs_delta"],
     }
 
+    # Write the header only once so repeated appends remain valid CSV exports.
     file_exists = output.exists()
     with output.open("a", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)

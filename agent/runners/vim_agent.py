@@ -1,3 +1,9 @@
+"""LangGraph-based file editing agent.
+
+The agent inspects a numbered in-memory file snapshot, proposes minimal line-based
+edits through tool calls, and returns the updated file plus a short explanation.
+"""
+
 # Langgraph
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage, HumanMessage, AIMessage
@@ -22,24 +28,28 @@ FILE_CACHE: Optional[str] = None
 
 # ---------- Hyperparameters / Config ----------
 class EditAgentConfig:
+    """Static configuration for the edit agent runtime."""
     MODEL_NAME = "gpt-4.1"
     TEMPERATURE = 0.3
     RECURSION_LIMIT = 30
 
 
 class AgentState(TypedDict):
+    """Graph state containing the conversation history and file-size mode."""
     messages: Annotated[Sequence[BaseMessage], add_messages]
     file_size_mode: Literal["small", "big"]
 
 # ---------- Tools ----------
 
 class Edit(BaseModel):
+    """Single line-based edit operation applied to the cached file."""
     op: Literal["replace", "insert_after", "insert_before", "delete"]
     start_line: int
     end_line: Optional[int] = None
     content: Optional[List[str]] = None
 
 class Patch(BaseModel):
+    """Collection of edit operations produced by the model."""
     edits: List[Edit]
 
 @tool
@@ -57,19 +67,17 @@ def finalize_patch(patch: Patch, explanation: str) -> str:
     if FILE_CACHE is None:
         raise ValueError("FILE_CACHE is empty; no file loaded.")
 
-    # Split into lines and strip leading "<n>:" prefixes to get raw content
+    # Strip synthetic line numbers before applying edits.
     numbered_lines = FILE_CACHE.splitlines()
     content_lines: List[str] = []
     for line in numbered_lines:
-        # Expect format "N: rest of line"
         parts = line.split(":", 1)
         if len(parts) == 2 and parts[0].strip().isdigit():
             content_lines.append(parts[1].lstrip(" "))
         else:
-            # Fallback if line is not numbered as expected
             content_lines.append(line)
 
-    # Apply edits from bottom to top so indices stay valid
+    # Apply edits from bottom to top so earlier line numbers are not shifted.
     edits_sorted = sorted(
         patch.edits,
         key=lambda e: (e.start_line, e.end_line or e.start_line),
@@ -78,37 +86,32 @@ def finalize_patch(patch: Patch, explanation: str) -> str:
 
     for edit in edits_sorted:
         op = edit.op
-        start_idx = edit.start_line - 1  # 1-based -> 0-based
-        end_idx = (edit.end_line or edit.start_line) - 1  # inclusive
+        start_idx = edit.start_line - 1
+        end_idx = (edit.end_line or edit.start_line) - 1
         new_content = edit.content or []
 
         if op == "replace":
-            # Replace lines [start_idx, end_idx] with new_content
             content_lines[start_idx:end_idx + 1] = new_content
 
         elif op == "delete":
-            # Delete lines [start_idx, end_idx]
             del content_lines[start_idx:end_idx + 1]
 
         elif op == "insert_before":
-            # Insert new_content before start_line
             content_lines[start_idx:start_idx] = new_content
 
         elif op == "insert_after":
-            # Insert after the given region (end_line if provided, else start_line)
             insert_at = end_idx + 1
             content_lines[insert_at:insert_at] = new_content
 
         else:
             raise ValueError(f"Unknown edit op: {op}")
 
-    # Re-number lines and write back into FILE_CACHE
+    # Rebuild the numbered cache consumed by the inspection tools.
     FILE_CACHE = "\n".join(
         f"{i+1}: {line}"
         for i, line in enumerate(content_lines)
     )
 
-    # Return explanation
     return explanation
 
 
@@ -128,11 +131,11 @@ def read_file_slice(
     lines = FILE_CACHE.splitlines()
     total_lines = len(lines)
 
-    start_idx = start_line - 1  # 0-based
+    start_idx = start_line - 1
     if start_idx >= total_lines:
         return f"Start line {start_line} is beyond end of file."
 
-    end_idx = min(total_lines, start_idx + num_lines)  # exclusive
+    end_idx = min(total_lines, start_idx + num_lines)
     sliced = lines[start_idx:end_idx]
 
     if not sliced:
@@ -172,7 +175,7 @@ def search_regex_window(
                 break
 
             start = max(0, i - before)
-            end = min(len(lines), i + after + 1)  # end is exclusive
+            end = min(len(lines), i + after + 1)
             window_lines = lines[start:end]
 
             block = (
@@ -215,7 +218,7 @@ def search_text_window(
                 break
 
             start = max(0, i - before)
-            end = min(len(lines), i + after + 1)  # end is exclusive
+            end = min(len(lines), i + after + 1)
 
             window_lines = lines[start:end]
 
@@ -253,6 +256,12 @@ base_model = ChatOpenAI(model=EditAgentConfig.MODEL_NAME, temperature=EditAgentC
 
 # ---------- Nodes ----------
 def decision_node(state: AgentState) -> AgentState:
+    """
+    Run the model with the toolset appropriate for the current file size.
+
+    The prompt emphasizes minimal inspection and requires the model to finalize
+    through `finalize_patch`, even for read-only or no-op outcomes.
+    """
 
     system_prompt = (
         "You are a file-editing agent. Your ONLY task is to apply the user's request to "
@@ -325,141 +334,7 @@ def decision_node(state: AgentState) -> AgentState:
         "for summary requests, summarizing the relevant lines."
     )
 
-
-    '''
-    system_prompt = (
-        "You are a file-editing agent. Your ONLY task is to apply the user's request to "
-        "THIS file, but ONLY if the requested conditions actually match the file content.\n\n"
-
-        "GENERAL RULES:\n"
-        "- File content is the single source of truth.\n"
-        "- Use as FEW inspection tool calls as possible (ideal: 1, max: 3).\n"
-        "- As soon as a tool output shows the exact line number and content you need, "
-        "IMMEDIATELY stop inspecting and prepare the patch.\n"
-        "- Never re-read any line that already appeared in previous tool output.\n"
-        "- Never add comments, logic, conditions, templates, or structure to the file. "
-        "Only edit the existing lines.\n\n"
-
-        "EXAMPLE OF CORRECT BEHAVIOR:\n"
-        "User request: 'Change port 5432 to 6432'.\n"
-        "Tool result from search_text_window('5432'):\n"
-        "  75: engine = \"postgresql\"\n"
-        "  76: host   = \"127.0.0.1\"\n"
-        "  77: port   = 5432\n"
-        "  78: user   = \"demo\"\n\n"
-        "This output already contains EVERYTHING needed:\n"
-        "- The target line number: 77\n"
-        "- The exact old value: 5432\n"
-        "- The context around it\n\n"
-        "CORRECT ACTION:\n"
-        "→ Immediately call finalize_patch with a Patch that REPLACES line 77 only\n"
-        "   (e.g., 'port   = 6432').\n"
-        "→ Do NOT call read_file_slice.\n"
-        "→ Do NOT perform any more inspections.\n\n"
-
-        "PATCH RULES:\n"
-        "- Use the Edit schema (op, start_line, end_line if needed, content if needed).\n"
-        "- Minimal edits ONLY. Do not repeat unchanged lines.\n"
-        "- If conditions do not match, or no change is needed, return Patch(edits=[]).\n\n"
-
-        "FINALIZATION:\n"
-        "Always finish with: finalize_patch(patch=Patch(...), explanation=...).\n"
-        "The explanation must briefly describe why the change was applied or skipped."
-    )    
-    '''
-
-    '''
-    system_prompt = (
-        "You are a file-editing agent. Your job is to apply the user's request to THIS file.\n\n"
-        "TOOL USE:\n"
-        "- Use as FEW inspection tools as possible (ideally 1, max 3).\n"
-        "- If a tool result already shows the exact line you must edit (with its line number), "
-        "you MUST NOT call any more inspection tools. Immediately prepare the patch.\n"
-        "- Never re-read lines that already appeared in any previous tool output.\n\n"
-        "PATCH:\n"
-        "- Use the Edit schema (op, start_line, end_line if needed, content if needed).\n"
-        "- Only change the requested values (minimal edits, no unchanged lines).\n"
-        "- Always finish by calling finalize_patch(patch=Patch(...), explanation=<brief-explanation>). "
-        "If nothing needs to be changed, use Patch(edits=[])."
-    )
-    '''
-    
-    '''
-    system_prompt = (
-        "You are a file-editing agent. Your ONLY task is to execute the user's request "
-        "on THIS file, but ONLY if the conditions in the request are actually true in "
-        "the file content.\n\n"
-
-        "FILE CONTENT IS THE SINGLE SOURCE OF TRUTH.\n"
-        "- If the user says 'If X then change Y', you MUST read X from the file using "
-        "inspection tools and compare it literally.\n"
-        "- If the condition is FALSE, you MUST make NO changes.\n"
-        "- Never assume, infer, or hallucinate values. Only trust what appears in tool output.\n"
-        "- Never insert logic, templates, conditions, comments, or new structure into the file.\n\n"
-
-        "TOOL USAGE:\n"
-        "- Use as FEW inspection tools as possible (ideal: 1–3 calls).\n"
-        "- As soon as a tool reveals all required information (e.g., both the condition "
-        "and the line to edit), STOP inspecting and prepare the patch immediately.\n"
-        "- Never re-inspect lines you have already seen.\n\n"
-
-        "PATCH RULES:\n"
-        "- Produce a minimal edit patch using the Edit schema "
-        "(op, start_line, end_line if needed, content if needed).\n"
-        "- Do not include unchanged lines.\n"
-        "- Line numbers must match exactly what you saw in tool output.\n"
-        "- If the condition is FALSE, or no edit is needed, or you are uncertain, "
-        "you MUST call finalize_patch with Patch(edits=[]).\n\n"
-
-        "Always finish by calling finalize_patch(patch=Patch(...), explanation=...). "
-        "The explanation must briefly state why the change was or was not applied."
-    )
-    '''
-
-    '''
-    system_prompt = (
-        "You are a file-editing agent. Your job is to execute the user's edit request "
-        "on THIS file, not to add new logic or conditionals.\n\n"
-        "Interpret any 'if ... then ...' only as a condition to check the current file "
-        "and decide whether to edit. Never write conditionals, templates, or code into the file.\n\n"
-        "Use inspection tools only when needed, and use as FEW tool calls as possible "
-        "(ideally 1–3). As soon as you find the relevant lines, stop inspecting and "
-        "prepare the update list.\n\n"
-        "Always finish by calling finalize_patch with a Patch object using the Edit schema "
-        "(op, start_line, end_line if needed, content if needed). If no edits are required, call finalize_patch with an empty 'edits' list."
-    )
-    '''
-
-    '''
-    system_prompt = (
-        "You are a file-editing agent and your task is to come up with an update list "
-        "for the current file. You have tools available to inspect the file content.\n\n"
-        "After inspection (max 3/4 inspection tools), call the finalize_patch tool using the Edit schema "
-        "(op, start_line, end_line if needed, content if needed).\n\n"
-        "If no changes are required or needed, or you didn't find anything useful, or you "
-        "are uncertain, just call finalize_patch with an empty edits list."
-        "If the conditions (like if) do not apply, or edits are not required, you MUST return an empty list for finalize_patch."
-    )
-    '''
-
-    '''
-    system_prompt = (
-        "You are a file-editing agent.\n"
-        "Don't guess file contents — use inspection tools whenever you need information.\n"
-        "Do not call tools repeatedly for the same lines once you have already inspected them.\n"
-        #"Only do direct file edits — if conditions are not met, don't apply changes.\n"
-        "Do only a FEW tool calls!\n"
-        "Do not ask or repeat questions.\n\n"
-        "Finally, call `finalize_patch` with a Patch object:\n"
-        "- Minimal edits only\n"
-        "- No unchanged lines\n"
-        "- Correct line numbers from tool output\n"
-        "- Use the Edit schema (op, start_line, end_line if needed, content if needed)\n"
-        "- If no changes are needed, you MUST call `finalize_patch` with an empty edits list.\n"
-    )
-    '''
-
-    # Choose toolset based on file_size_mode
+    # Small files can be read in one shot; larger files force targeted inspection.
     if state["file_size_mode"] == "small":
         allowed_tools = tools_small_file
     else:
@@ -480,8 +355,12 @@ graph.add_node("tool_node", tool_node)
 graph.add_edge(START, "decision_node")
     
 def route_decision(state: AgentState) -> str:
+    """
+    Route model outputs either to tool execution or back to the model loop.
+
+    The graph stays in the decision loop until the model emits a tool call.
+    """
     last = state["messages"][-1]
-    # If the LLM asked to call a tool, go to the ToolNode
     if isinstance(last, AIMessage) and getattr(last, "tool_calls", None):
         return "__tool__"
     return "__decision__"
@@ -496,13 +375,17 @@ graph.add_conditional_edges(
 )
 
 def route_after_tool(state: AgentState) -> str:
+    """
+    Decide whether tool execution should terminate the graph or continue reasoning.
+
+    `finalize_patch` is treated as the terminal tool because it both applies edits
+    and packages the final explanation.
+    """
     last = state["messages"][-1]
 
-    # If the last message is the result of finalize_patch -> end
     if isinstance(last, ToolMessage) and last.name == "finalize_patch":
         return "__end__"
 
-    # Otherwise, go back to the decision node
     return "__decision__"
 
 graph.add_conditional_edges(
@@ -522,8 +405,14 @@ def run_file_edit_agent(
     file_content: str,
     big_file: bool,
 ) -> dict:
+    """
+    Execute the editing graph against a single file snapshot.
 
-    # Add 1-based line numbers
+    The file is exposed to the agent as numbered text to stabilize line-based edits.
+    Returns the updated unnumbered content together with the model's explanation.
+    """
+
+    # The agent edits by explicit line number, so the cache is always numbered.
     numbered_content = "\n".join(
         f"{i+1}: {line}"
         for i, line in enumerate(file_content.splitlines())
@@ -544,7 +433,7 @@ def run_file_edit_agent(
     )
 
 
-    # Extract final tool message (which contains the explanation)
+    # The final explanation is emitted by the terminal `finalize_patch` tool call.
     explanation = None
     for msg in result["messages"]:
         if isinstance(msg, ToolMessage) and msg.name == "finalize_patch":
@@ -552,7 +441,7 @@ def run_file_edit_agent(
     if explanation is None:
         explanation = "No explanation returned from finalize_patch."
 
-    # get rid of numbering
+    # Remove synthetic numbering before returning the updated file to the caller.
     unnumbered_lines = []
     for line in FILE_CACHE.splitlines():
         parts = line.split(":", 1)
@@ -577,7 +466,6 @@ if __name__ == "__main__":
     
     
         
-
 
 
 
