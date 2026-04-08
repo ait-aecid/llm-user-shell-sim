@@ -25,11 +25,24 @@ The core research question is:
 
 If you mainly want to explore the existing dataset and run the analysis code, this is the shortest path:
 
-1. Create a Python environment and install the dependencies.
-2. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
-3. Run one baseline ML experiment.
-4. Run one statistical experiment.
-5. Inspect the generated CSV outputs and plots.
+1. If you received the dataset as `data.zip`, extract it.
+2. Create a Python environment and install the dependencies.
+3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
+4. Run one baseline ML experiment.
+5. Run one statistical experiment.
+6. Inspect the generated CSV outputs and plots.
+
+Extract the dataset archive:
+
+```bash
+unzip data.zip
+```
+
+If `unzip` is not available on your system, you can also use Python:
+
+```bash
+python3 -m zipfile -e data.zip .
+```
 
 Example setup:
 
