@@ -26,7 +26,8 @@ The core research question is:
 If you mainly want to explore the existing dataset and run the analysis code, this is the shortest path:
 
 1. Extract the dataset from `data.zip`.
-2. Install Python 3.12.3 (exact version used in this project), create and activate a virtual environment, and install the project dependencies via `pip install -r requirements.txt`.3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
+2. Install Python 3.12.3 (exact version used in this project), create and activate a virtual environment, and install the project dependencies via `pip install -r requirements.txt`
+3. Inspect the aggregated datasets in `data/Nextcloud/combine/ExperimentAggregated/` or `data/WordPress/combine/ExperimentAggregated/`.
 4. Run one baseline ML experiment.
 5. Run one statistical experiment.
 6. Inspect the generated CSV outputs and plots.
@@ -226,9 +227,9 @@ The `agent/` directory contains the automation used to perform troubleshooting a
 ### Agent types
 
 - `agent/runners/LLM_Agent.py`  
-  Terminal-based troubleshooting agent for a Linux-based server hosting a Nextcloud instance
+  Terminal-based troubleshooting agent for a Linux-based server hosting a Nextcloud instance on a LAMP stack
 - `agent/runners/LLM_Agent_WP.py`  
-  Terminal-based troubleshooting agent for a Linux-based server hosting a WordPress instance
+  Terminal-based troubleshooting agent for a Linux-based server hosting a WordPress instance on a LAMP stack
 - `agent/runners/browser_agent.py`
   Browser automation agent for Nextcloud
 - `agent/runners/browser_agent_WP.py`
