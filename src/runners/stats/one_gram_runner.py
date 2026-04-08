@@ -45,12 +45,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
-    # single mode arguments
     parser.add_argument(
         "--log_type",
         choices=["syslog", "nextcloud", "audit"],
         help="Log type for single mode.",
     )
+
+    # single mode arguments
     parser.add_argument(
         "--ngram_mode",
         choices=["char", "word"],
@@ -96,6 +97,12 @@ def parse_args() -> argparse.Namespace:
                 f"In single mode the following arguments are required: {', '.join(missing)}"
             )
 
+    if args.mode == "sweep":
+        if args.dataset == "WordPress" and args.log_type == "nextcloud":
+            parser.error(
+                "--log_type nextcloud is not valid for dataset WordPress"
+            )
+
     return args
 
 
@@ -139,11 +146,9 @@ def run_one_gram(
         )
 
     elif mode == "sweep":
-        log_types = (
-            ["audit", "syslog"]
-            if dataset == "WordPress"
-            else ["audit", "syslog", "nextcloud"]
-        )
+        if log_type is not None:
+            log_types = [log_type]
+
         modes = ["word", "char"]
         metrics = ["l1", "js"]
 

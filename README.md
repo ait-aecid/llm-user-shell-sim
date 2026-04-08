@@ -19,7 +19,7 @@ Human participants and AI agents then attempt to diagnose and fix these problems
 
 The core research question is:
 
-> Are the resulting logs sufficiently different to distinguish AI-driven troubleshooting from human troubleshooting, or are they too similar?
+> Are the resulting logs sufficiently different to distinguish AI-driven troubleshooting from human troubleshooting?
 
 ## Quick Start
 
@@ -62,7 +62,7 @@ python -m src.runners.stats.one_gram_runner \
   --metric js
 ```
 
-If you want to reproduce the original troubleshooting data collection phase, read the VM setup and agent sections below first, because that part depends on the thesis lab infrastructure.
+If you want to reproduce the original troubleshooting data collection phase, first review the VM setup and agent sections below, as this stage depends on the thesis lab infrastructure.
 
 ## Repository Overview
 
@@ -179,9 +179,9 @@ This setup routes the relevant Nextcloud admin-audit events into:
 
 Audit rules were deployed via an automated configuration role from the public AIT Cybersecurity repository:
 
-- `https://github.com/orgs/ait-cs-IaaS`
+- [AIT Cybersecurity Repository](https://github.com/orgs/ait-cs-IaaS)
 
-This repository README does not replicate those audit rules verbatim; it documents that the Linux audit subsystem used in the experiments was provisioned from that external configuration source.
+This repository README does not reproduce those audit rules exactly; it states that the Linux audit subsystem used in the experiments was set up based on that external configuration source.
 
 #### Syslog
 
@@ -195,7 +195,6 @@ Standard Ubuntu system logging via `syslog` was used in addition to the applicat
 - recorded logs including:
   - `audit.log`
   - `syslog.log`
-  - `auth.log`
   - `nextcloud.log`
 
 ### 2. WordPress scenario
@@ -206,9 +205,6 @@ Standard Ubuntu system logging via `syslog` was used in addition to the applicat
 - recorded logs including:
   - `audit.log`
   - `syslog.log`
-  - `auth.log`
-
-There is typically **no application log equivalent to `nextcloud.log` for WordPress** in this project, which is why most WordPress analyses focus on `audit` and `syslog`.
 
 ## Agent Component
 
@@ -276,17 +272,16 @@ In practice, the terminal agent logic assumes:
 
 ### Current repository-specific behavior
 
-At the moment, the implementation is not fully generic:
+At present, parts of the implementation are tailored to the experimental setup used in this project:
 
-- `connect_root_setSentinel()` currently runs `ssh arena_wp`
-- log extraction is currently implemented via fixed paths in [`agent/utils.py`](/home/moserl/Dataanalysis/agent/utils.py)
-- the helper currently writes extracted logs to `agent/scenarios/wordpress/LOGS`
-- both the Nextcloud and WordPress helper scripts currently inherit these same hardcoded assumptions
+- `connect_root_setSentinel()` currently connects via the SSH alias `ssh arena_wp`
+- log extraction relies on fixed paths defined in [`agent/utils.py`]
+- both the Nextcloud and WordPress helper scripts currently share these configuration assumptions
 
-That means:
+As a consequence:
 
-- you will likely need to adapt the SSH target alias for your own lab
-- you may also want to parameterize the log destination if you use separate Nextcloud and WordPress logging folders
+- the SSH target alias will need to be adapted for different environments  
+- the log destination paths may need to be parameterized, especially when separating Nextcloud and WordPress logging outputs  
 
 ### Remote log paths currently assumed by the code
 
@@ -311,11 +306,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-If your system does not provide the `python` command, use `python3` instead.
-
 ### Node.js
 
-If you want to use the browser agents with Playwright MCP, you also need a working Node.js installation because the browser runners call `npx @playwright/mcp@latest`.
+Node.js is required for the browser agent, as the browser runners invoke npx @playwright/mcp@latest.
 
 ### Environment variables
 
@@ -325,14 +318,12 @@ Typical variables used by this project:
 
 ```env
 OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-4.1-mini
 DATAANALYSIS_DATA_ROOT=/absolute/path/to/custom/data/root
 ```
 
 Notes:
 
 - `OPENAI_API_KEY` is required for the LLM-based runners and the LLM-backed analysis pipeline.
-- `OPENAI_MODEL` is used by the browser agents as an override.
 - `DATAANALYSIS_DATA_ROOT` is optional and overrides the default dataset root used by the loaders.
 
 ## Data Layout
@@ -369,13 +360,11 @@ The main loaders and experiment runners expect aggregated data under:
 Each actor directory contains logs such as:
 
 - `audit.log`
-- `auth.log`
 - `syslog.log`
 - `nextcloud.log`
 
 Notes:
 
-- `auth.log` is collected and preserved in the dataset layout, but the main ML runners in `src/runners/ml/` do not currently use it.
 - WordPress directories still keep a `nextcloud.log` slot for structural consistency, but the main WordPress ML runners only operate on `audit` and `syslog`.
 
 Actors are treated as groups. By default:
@@ -383,7 +372,7 @@ Actors are treated as groups. By default:
 - folders whose name contains `GPT` are treated as **AI**
 - other actor folders are treated as **human**
 
-This behavior is implemented in [`src/core/shared/actor_catalog.py`](/home/moserl/Dataanalysis/src/core/shared/actor_catalog.py).
+This behavior is implemented in [`src/core/shared/actor_catalog.py`].
 
 ## Running the Agent Experiments
 
@@ -413,11 +402,11 @@ These scripts:
 3. wait until the participant has finished
 4. extract only the new log entries
 
-Important:
+**Important:**
 
-- the extracted logs currently land in `agent/scenarios/wordpress/LOGS` because of the present implementation in [`agent/utils.py`](/home/moserl/Dataanalysis/agent/utils.py)
-- they are not automatically inserted into the final `data/Nextcloud/...` or `data/WordPress/...` dataset structure
-- in practice, collected logs still need to be renamed and archived into the appropriate dataset folders
+- Extracted logs are currently written to `agent/scenarios/wordpress/LOGS`, as defined in [`agent/utils.py`](agent/utils.py)
+- They are not automatically integrated into the final `data/Nextcloud/...` or `data/WordPress/...` dataset structure
+- In practice, collected logs need to be renamed and placed into the appropriate dataset folders
 
 ### Running the terminal LLM agent
 
@@ -434,12 +423,12 @@ These agents:
 - optionally edit files through the Vim sub-agent
 - extract newly generated logs at cleanup
 
-Important:
+**Important:**
 
-- these agents currently do not expose CLI arguments for the task description
-- the troubleshooting target is hardcoded in `AgentConfig.problem_prompt`
-- model names, temperatures, recursion limits, and the human-delay simulation are also configured directly in source
-- to reuse the same runner for another fault scenario, you currently edit the corresponding runner file
+- The current agents do not expose CLI arguments for the task description  
+- The troubleshooting target is defined in `AgentConfig.problem_prompt`  
+- Model configuration (e.g., model names, temperatures, recursion limits, and human-delay simulation) is specified directly in the source code  
+- To reuse the same runner for a different fault scenario, the corresponding runner file can be adjusted accordingly  
 
 ### Running the browser agent
 
@@ -470,13 +459,8 @@ Behavior:
 Example query:
 
 ```text
-Open wordpress.local and check whether the media upload functionality is broken.
+Open wordpress.local, log in, and verify that the basic functionality of the site is working as expected.
 ```
-
-Operational caveat:
-
-- the terminal LLM agents call the browser helpers through plain script names such as `browser_agent.py`
-- this makes the browser subtool sensitive to the current working directory and Python executable naming unless you adapt the runner implementation
 
 ## Machine Learning Experiment Runners
 
@@ -496,11 +480,9 @@ The actor pair splits are generated in [`src/core/ml/val_test_combs.py`](/home/m
   Selects `Nextcloud` or `WordPress`
   Legacy aliases also exist: `Data` = `Nextcloud`, `Data_WP` = `WordPress`
 - `--limit_outer`
-  Restricts the number of outer splits for debugging
+  Restricts the number of outer splits
 - `--out_csv`
   Output CSV path for experiment results
-- `--metric`
-  Validation metric used for model selection in runners that expose it
 - `--benchmark`
   Prints timing information for expensive steps
 
@@ -543,7 +525,6 @@ python -m src.runners.ml.tfidf_360_nested \
 
 Important notes:
 
-- this runner does not expose a `--metric` argument; model selection is fixed to `f1_macro`
 - for `WordPress`, `--log_type nextcloud` is not meaningful
 - `--randomize_actor_labels` and `--assignment_idx` are used for null-hypothesis experiments
 
@@ -702,7 +683,7 @@ Arguments:
 - `--assignment_mode {true,random_stratified,indexed_stratified}`
 - `--assignment_idx INT`
 - `--out_csv PATH`
-- `--log_type {syslog,nextcloud,audit}` for `single`
+- `--log_type {syslog,nextcloud,audit}`
 - `--ngram_mode {char,word}` for `single`
 - `--metric {js,l1}` for `single`
 
@@ -738,7 +719,7 @@ Arguments:
 - `--assignment_mode {true,random_stratified,indexed_stratified}`
 - `--assignment_idx INT`
 - `--out_csv PATH`
-- `--log_type {syslog,nextcloud,audit}` for `single`
+- `--log_type {syslog,nextcloud,audit}`
 - `--window_size INT` for `single`
 - `--stride INT` for `single`
 - `--metric {gini,kurtosis,mad,entropy}` for `single`
@@ -786,7 +767,7 @@ Key arguments:
 Entry point:
 
 ```bash
-python -m src.runners.stats.audit_advanced_time_focused
+python -m src.runners.stats.audit_advanced_time_focused --help
 ```
 
 Purpose:
@@ -815,7 +796,7 @@ This script:
 - loads many null-hypothesis CSVs
 - computes the mean metric per CSV
 - compares them to the observed run
-- computes an empirical p-value
+- computes an empirical p-value (with `--larger-is-better`, higher scores are treated as better)
 - generates a boxplot
 
 ### TF-IDF token attribution report
@@ -841,6 +822,13 @@ python -m src.analysis.stats_null_hypothes_eval \
   --actual-csv results/statistics_real.csv \
   --output results/stat_null_boxplot.pdf
 ```
+Purpose:
+
+- selects the best-performing configuration per CSV according to the chosen metric
+- builds a null distribution from these best values across permutations
+- compares it to the observed best configuration
+- computes an empirical p-value
+- generates a boxplot of the null distribution with the observed value highlighted
 
 ### Ranking model result files by a metric
 
@@ -853,7 +841,6 @@ Purpose:
 - compare multiple result CSV files
 - rank them by a chosen metric
 - create a ranked boxplot
-- optionally run pairwise Wilcoxon tests for the top models
 
 Example:
 
@@ -879,68 +866,16 @@ Purpose:
   - silhouette
   - Cliff's delta summaries
 
-Example:
-
-```bash
-python -m src.analysis.rank_statistic_configs_advanced \
-  results/statistic_one_gram_nextcloud.csv \
-  results/statistic_complexity_metrics_nextcloud.csv \
-  --top-k 10 \
-  --show-individual-metrics
-```
-
-## Convenience Shell Scripts
-
-The repository also contains helper shell scripts such as:
-
-- `execution_bash.sh`
-- `null_hypothese.sh`
-- `stats_null_hypothese.sh`
-- `rank_vs_dummy.sh`
-
-These are useful as historical experiment launchers, but they currently reference some older module names and assumptions. Treat them as templates rather than guaranteed drop-in entry points.
-
-For reproducible usage, prefer the explicit Python module commands documented in this README.
-
-## Outputs
-
-Typical outputs produced by the runners:
-
-- CSV result files in `results/`
-- logs in `logs/`
-- PDF plots generated by the analysis scripts
-
-The ML runners usually write one row per outer split, including:
-
-- selected configuration
-- validation metrics
-- test metrics
-- split composition
-- serialized hyperparameter information
-
-## Reproducibility Notes
-
-Some parts of the project depend on:
-
-- external OpenAI APIs
-- local VM setup
-- SSH aliases and sudo behavior
-- available datasets under `data/`
-- optional packages such as `drain3`, `transformers`, and browser tooling
-
-As a result, full end-to-end reproduction requires more than only installing Python dependencies. In particular, reproducing the original agent experiments requires a lab environment comparable to the thesis setup.
-
 ## Known Caveats
 
-- The current agent connection helper is hardcoded to `ssh arena_wp`.
-- The log extraction helper currently assumes fixed log locations.
-- The log output directory in `agent/utils.py` is currently WordPress-oriented.
-- The terminal LLM agents use hardcoded `problem_prompt` values instead of CLI arguments.
-- The terminal LLM agents invoke browser helpers via plain script names, so browser-assisted runs are sensitive to the working directory and available Python executable name.
-- Some shell scripts still use legacy module paths.
-- Browser agents additionally depend on Playwright MCP and Node.js.
+- The current agent connection helper uses the SSH alias `ssh arena_wp`.
+- The log extraction helper operates on predefined log locations.
+- The log output directory is currently defined directly in `agent/utils.py`.
+- The terminal LLM agents define the troubleshooting task via `problem_prompt` in the source code rather than via CLI arguments.
+- The terminal LLM agents invoke browser helpers via script names, making execution dependent on the working directory and Python executable configuration.
+- Browser agents additionally rely on Playwright MCP and a Node.js installation.
 
-None of these limitations affect the interpretation of the already collected dataset in `data/`, but they matter if you want to rerun the data collection phase from scratch.
+These aspects do not affect the interpretation of the dataset provided in `data/`, but are relevant when reproducing the data collection process in a different environment.
 
 ## Suggested Starting Points
 

@@ -53,12 +53,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
-    # single mode arguments
     parser.add_argument(
         "--log_type",
         choices=["syslog", "nextcloud", "audit"],
-        help="Log type for single mode.",
+        help="Log type for single mode, or optional restriction for sweep mode.",
     )
+
+    # single mode arguments
     parser.add_argument(
         "--window_size",
         type=int,
@@ -105,6 +106,9 @@ def parse_args() -> argparse.Namespace:
             parser.error(
                 f"In single mode the following arguments are required: {', '.join(missing)}"
             )
+
+    if args.dataset == "WordPress" and args.log_type == "nextcloud":
+        parser.error("--log_type nextcloud is not valid for dataset WordPress")
 
     return args
 
@@ -169,18 +173,29 @@ def run_complexity_metrics(
         )
 
     elif mode == "sweep":
-        log_types = ["syslog"]
-        window_sizes = [1, 2, 3, 4, 5, 10, 25]
-        strides = [1, 2, 5]
+        if log_type is not None:
+            log_types = [log_type]
 
-        configs = complexity_metrics.build_sweep_configs(
-            dataset=dataset,
-            log_types=log_types,
-            window_sizes=window_sizes,
-            strides=strides,
-            preprocess_mode="soft",
-            drain_ini_path=None,
-        )
+        window_stride_pairs = [
+            (1, 1),   # unigram-like
+            (3, 1),   # short local patterns
+            (5, 2),   # slightly smoother local structure
+            (10, 2),  # medium-scale behavior
+            (25, 5),  # long-range structure
+        ]
+
+        configs = [
+            {
+                "dataset": dataset,
+                "log_type": log_type,
+                "window_size": window_size,
+                "stride": stride,
+                "preprocess_mode": "soft",
+                "drain_ini_path": None,
+            }
+            for log_type in log_types
+            for window_size, stride in window_stride_pairs
+        ]
 
         print(
             f"\nRunning complexity_metrics sweep with: "

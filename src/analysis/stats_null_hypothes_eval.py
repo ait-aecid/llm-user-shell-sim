@@ -10,6 +10,9 @@ import numpy as np
 import pandas as pd
 
 
+METRIC_CHOICES = ["silhouette", "cliffs", "norm_mean_diff"]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -22,11 +25,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--metric",
         required=True,
-        choices=["silhouette", "cliffs"],
+        choices=METRIC_CHOICES,
         help=(
             "Metric to optimize per CSV. "
             "'silhouette' uses silhouette_overall_mean. "
-            "'cliffs' uses the mean of the two Cliff's delta columns."
+            "'cliffs' uses the mean of the two Cliff's delta columns. "
+            "'norm_mean_diff' uses a normalized mean-difference / normalized mean-separation column."
         ),
     )
     parser.add_argument(
@@ -118,8 +122,27 @@ def compute_metric_series(df: pd.DataFrame, metric: str) -> pd.Series:
         s2 = pd.to_numeric(df[col2], errors="coerce")
         return (s1 + s2) / 2.0
 
-    raise ValueError(f"Unsupported metric: {metric}")
+    if metric == "norm_mean_diff":
+        required = ["ai_ai_mean", "ai_human_mean", "human_human_mean"]
+        missing = [c for c in required if c not in df.columns]
+        if missing:
+            raise KeyError(
+                f"Required columns for 'norm_mean_diff' missing: {missing}"
+            )
 
+        ai_ai = pd.to_numeric(df["ai_ai_mean"], errors="coerce")
+        ai_human = pd.to_numeric(df["ai_human_mean"], errors="coerce")
+        human_human = pd.to_numeric(df["human_human_mean"], errors="coerce")
+
+        within_mean = (ai_ai + human_human) / 2.0
+        denom = ai_human + within_mean
+
+        out = pd.Series(np.nan, index=df.index, dtype=float)
+        valid = denom != 0
+        out.loc[valid] = (ai_human.loc[valid] - within_mean.loc[valid]) / denom.loc[valid]
+        return out
+
+    raise ValueError(f"Unsupported metric: {metric}")
 
 def extract_best_row_value(csv_path: Path, metric: str) -> Tuple[float, pd.Series]:
     df = pd.read_csv(csv_path)
@@ -183,6 +206,8 @@ def metric_axis_label(metric: str, ylabel_override: str | None) -> str:
         return "Best silhouette overall mean per CSV"
     if metric == "cliffs":
         return "Best mean Cliff's delta per CSV"
+    if metric == "norm_mean_diff":
+        return "Best normalized mean difference per CSV"
     return metric
 
 
@@ -190,6 +215,8 @@ def metric_default_xlim(metric: str) -> tuple[float, float] | None:
     if metric == "silhouette":
         return (-1.0, 1.0)
     if metric == "cliffs":
+        return (-1.0, 1.0)
+    if metric == "norm_mean_diff":
         return (-1.0, 1.0)
     return None
 
@@ -269,7 +296,10 @@ def make_plot(
         ax.set_title(title)
 
     x_min, x_max = ax.get_xlim()
-    annotation_x = min(observed_value + 0.03 * (x_max - x_min), x_max - 0.05 * (x_max - x_min))
+    annotation_x = min(
+        observed_value + 0.03 * (x_max - x_min),
+        x_max - 0.05 * (x_max - x_min),
+    )
     annotation_y = y_pos + 0.12
 
     ax.text(
@@ -300,7 +330,12 @@ def make_plot(
     plt.close(fig)
 
 
-def print_best_row_summary(label: str, csv_path: Path, best_value: float, best_row: pd.Series) -> None:
+def print_best_row_summary(
+    label: str,
+    csv_path: Path,
+    best_value: float,
+    best_row: pd.Series,
+) -> None:
     distance_name = best_row.get("distance_name", "n/a")
     approach = best_row.get("approach", "n/a")
     hyperparams = best_row.get("hyperparameters_json", "n/a")
@@ -320,7 +355,10 @@ def main() -> None:
     null_results = collect_null_best_values(args.null_dir, args.glob, args.metric)
     null_values = np.array([value for _, value, _ in null_results], dtype=float)
 
-    observed_value, observed_best_row = extract_best_row_value(args.actual_csv, args.metric)
+    observed_value, observed_best_row = extract_best_row_value(
+        args.actual_csv,
+        args.metric,
+    )
 
     p_value = empirical_p_value(
         null_values,
