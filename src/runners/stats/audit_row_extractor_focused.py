@@ -504,6 +504,34 @@ def select_actors(
 
     return selected
 
+def build_actor_color_map(actor_names: Sequence[str]) -> Dict[str, Any]:
+    """Assign actor-specific colors with group-consistent palettes.
+
+    Human actors receive shades of blue, AI actors receive shades of orange.
+    This keeps actor identity visible while making the human/AI split obvious.
+    """
+    humans = [name for name in actor_names if not is_ai_actor(name)]
+    ais = [name for name in actor_names if is_ai_actor(name)]
+
+    color_map: Dict[str, Any] = {}
+
+    # Use separate colormaps so both groups are visually coherent.
+    # Staying away from the extreme ends improves readability.
+    human_cmap = plt.cm.Blues
+    ai_cmap = plt.cm.Oranges
+
+    def shade_positions(n: int) -> List[float]:
+        if n == 1:
+            return [0.65]
+        return [0.45 + 0.4 * i / (n - 1) for i in range(n)]
+
+    for name, pos in zip(humans, shade_positions(len(humans))):
+        color_map[name] = human_cmap(pos)
+
+    for name, pos in zip(ais, shade_positions(len(ais))):
+        color_map[name] = ai_cmap(pos)
+
+    return color_map
 
 def plot_actor_distributions(
     actor_distributions: Dict[str, Counter],
@@ -526,8 +554,6 @@ def plot_actor_distributions(
     for counter in actor_distributions.values():
         global_counter.update(counter)
 
-    # Using a shared vocabulary avoids giving each actor a different support,
-    # which would make the grouped comparison visually misleading.
     vocab = [item for item, _ in global_counter.most_common(top_k)]
     if not vocab:
         print("No values to plot.")
@@ -536,6 +562,7 @@ def plot_actor_distributions(
     labels = [_format_distribution_label(item) for item in vocab]
     actor_names = list(actor_distributions.keys())
     display_names = anonymize_actor_labels(actor_names)
+    actor_colors = build_actor_color_map(actor_names)
 
     num_actors = len(actor_names)
     x = list(range(len(vocab)))
@@ -560,7 +587,17 @@ def plot_actor_distributions(
             i - group_width / 2 + bar_width / 2 + idx * bar_width
             for i in x
         ]
-        plt.bar(offsets, values, width=bar_width, label=display_names[actor])
+
+        plt.bar(
+            offsets,
+            values,
+            width=bar_width,
+            label=display_names[actor],
+            color=actor_colors[actor],
+        )
+
+    for i in range(len(vocab) + 1):
+        plt.axvline(x=i - 0.5, color="gray", linestyle="--", linewidth=0.8, alpha=0.5)
 
     plt.xticks(x, labels, rotation=45, ha="right")
     plt.ylabel(ylabel)
@@ -576,7 +613,6 @@ def plot_actor_distributions(
         plt.savefig(save_path)
 
     plt.show()
-
 
 def get_mode_config(mode: str) -> Tuple[Pattern[str], List[str]]:
     """Return the record prefix and keys associated with an audit-log mode."""
@@ -639,53 +675,7 @@ if __name__ == "__main__":
     plot_actor_distributions(
         actor_distributions,
         top_k=args.top_k,
-        title=f"{args.mode} {args.distribution} per actor",
-        normalize=True,
-        save_path=args.save_path,
-    )
-    args = parse_args()
-
-    file_pairs = [
-        (actor, str(get_log_path(actor, "audit", dataset=args.dataset)))
-        for actor in analysis_actors(args.dataset)
-    ]
-
-    require_all_keys = False
-    ignore_case = False
-    keep_line = False
-    strip_quotes = True
-    value_pattern = QUOTED_OR_BARE_VALUE_PATTERN
-
-    prefix, keys = get_mode_config(args.mode)
-
-    selected_actor_files = select_actors(
-        file_pairs,
-        specific_actors=None,
-        include_humans=args.include_humans,
-        include_ais=args.include_ais,
-    )
-
-    actor_distributions = collect_actor_distributions(
-        selected_actor_files,
-        distribution_name=args.sort_by,
-        prefix_regex=prefix,
-        keys=keys,
-        value_pattern=value_pattern,
-        require_all_keys=require_all_keys,
-        ignore_case=ignore_case,
-        keep_line=keep_line,
-        strip_quotes=strip_quotes,
-        pair_key1=args.pair_key1,
-        pair_key2=args.pair_key2,
-        conditional_given_key=args.conditional_given_key,
-        conditional_given_value=args.conditional_given_value,
-        conditional_target_key=args.conditional_target_key,
-    )
-
-    plot_actor_distributions(
-        actor_distributions,
-        top_k=args.actor_plot_top_k,
-        title=f"{args.mode} {args.sort_by} per actor",
+        #title=f"{args.mode} {args.distribution} per actor",
         normalize=True,
         save_path=args.save_path,
     )

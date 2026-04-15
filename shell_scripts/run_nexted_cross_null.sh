@@ -4,10 +4,10 @@ set -euo pipefail
 # =========================
 # User settings
 # =========================
-DATASET="WordPress"   # "Nextcloud" or "WordPress"
-LOG_TYPE="audit"      # For Nextcloud: audit | syslog | nextcloud
+DATASET="Nextcloud"   # "Nextcloud" or "WordPress"
+LOG_TYPE="nextcloud"      # For Nextcloud: audit | syslog | nextcloud
                        # For WordPress: audit | syslog
-N_JOBS=7
+N_JOBS=6
 
 # =========================
 # Fixed settings
@@ -15,7 +15,7 @@ N_JOBS=7
 MODEL="svm"
 LIMIT_OUTER=50
 PYTHON_MODULE="src.runners.ml.tfidf_360_nested"
-OUT_DIR="results/tfidf_null/${DATASET}/${LOG_TYPE}/${MODEL}"
+OUT_DIR="results"
 mkdir -p "$OUT_DIR"
 
 # =========================

@@ -23,7 +23,7 @@ PointStyler = Callable[[str], dict[str, Any]]
 GroupAssigner = Callable[[str], str]
 
 
-DEFAULT_PLOT_DIR = Path("results/Plots/Statistic")
+DEFAULT_PLOT_DIR = Path("results")
 
 
 def _slugify_filename(value: str) -> str:

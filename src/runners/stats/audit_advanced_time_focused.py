@@ -1,14 +1,41 @@
 #!/usr/bin/env python3
 """Analyze timing structure in audit logs and compare actor-specific distributions.
 
-The script groups audit records into execution bundles and short time-window clusters,
-then visualizes inter-cluster delays either globally or conditioned on a command.
+The script groups audit records into execution bundles and short time-window
+clusters, then visualizes inter-cluster delays either globally or conditioned
+on a command.
+
+Examples
+--------
+All inter-event delays for 3 humans and 2 AIs from Nextcloud:
+
+    python -m src.runners.stats.audit_timing_plot \
+        --dataset Nextcloud \
+        --series all \
+        --n_humans 3 \
+        --n_ais 2
+
+Command-conditioned delays after `tail` for 2 humans and 2 AIs from WordPress:
+
+    python -m src.runners.stats.audit_timing_plot \
+        --dataset WordPress \
+        --series cmd \
+        --cmd tail \
+        --n_humans 2 \
+        --n_ais 2 \
+        --cluster_window 0.5 \
+        --bins_n 50 \
+        --save_dir results
 """
 
+from __future__ import annotations
+
+import argparse
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Sequence, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +46,181 @@ from src.core.stats.data_catalog import get_log_path, analysis_actors
 AUDIT_ID_RE = re.compile(r"msg=audit\((?P<ts>\d+(?:\.\d+)?):(?P<serial>\d+)\)")
 FIELD_RE_TEMPLATE = r"{key}=(?P<val>\"[^\"]*\"|\S+)"
 
+
+# ---- CLI configuration ----
+
+def parse_args() -> argparse.Namespace:
+    """Parse and validate CLI arguments for actor-wise timing analysis."""
+    parser = argparse.ArgumentParser(
+        description=(
+            "Plot actor-wise timing distributions from audit logs. "
+            "You can analyze either all inter-cluster delays or only delays "
+            "following clusters that contain a specific command."
+        )
+    )
+
+    parser.add_argument(
+        "--dataset",
+        choices=["Nextcloud", "WordPress"],
+        required=True,
+        help=(
+            "Dataset to use. "
+            "'Nextcloud' uses the Nextcloud dataset, while 'WordPress' uses the WordPress dataset."
+        ),
+    )
+
+    parser.add_argument(
+        "--series",
+        choices=["all", "cmd"],
+        required=True,
+        help=(
+            "Which timing series to plot. "
+            "'all' plots all inter-cluster delays. "
+            "'cmd' plots only delays from clusters containing --cmd to the next cluster."
+        ),
+    )
+
+    parser.add_argument(
+        "--cmd",
+        type=str,
+        default=None,
+        help=(
+            "Command to condition on when --series cmd is selected. "
+            "Examples: tail, grep, vim. "
+            "Ignored when --series all is used."
+        ),
+    )
+
+    parser.add_argument(
+        "--cluster_window",
+        type=float,
+        default=0.5,
+        help=(
+            "Maximum time gap in seconds for merging nearby bundles into one cluster. "
+            "Default: 0.5"
+        ),
+    )
+
+    parser.add_argument(
+        "--bins_n",
+        type=int,
+        default=50,
+        help=(
+            "Number of logarithmic histogram bins to use. "
+            "Default: 50"
+        ),
+    )
+
+    parser.add_argument(
+        "--n_humans",
+        type=int,
+        default=None,
+        help=(
+            "How many human actors to include in the plots. "
+            "Actors are taken in the default dataset actor order returned by analysis_actors(dataset). "
+            "If omitted, no human actors are included unless you explicitly pass a value."
+        ),
+    )
+
+    parser.add_argument(
+        "--n_ais",
+        type=int,
+        default=None,
+        help=(
+            "How many AI actors to include in the plots. "
+            "Actors are taken in the default dataset actor order returned by analysis_actors(dataset). "
+            "If omitted, no AI actors are included unless you explicitly pass a value."
+        ),
+    )
+
+    parser.add_argument(
+        "--save_dir",
+        type=str,
+        default="results",
+        help=(
+            "Directory where the generated plots should be saved. "
+            "Default: results"
+        ),
+    )
+
+    args = parser.parse_args()
+
+    if args.series == "cmd" and not args.cmd:
+        parser.error("When --series cmd is used, --cmd is required")
+
+    if args.cluster_window <= 0:
+        parser.error("--cluster_window must be > 0")
+
+    if args.bins_n <= 0:
+        parser.error("--bins_n must be a positive integer")
+
+    if args.n_humans is not None and args.n_humans < 0:
+        parser.error("--n_humans must be >= 0")
+
+    if args.n_ais is not None and args.n_ais < 0:
+        parser.error("--n_ais must be >= 0")
+
+    if args.n_humans is None and args.n_ais is None:
+        parser.error("At least one of --n_humans or --n_ais must be provided")
+
+    return args
+
+
+def is_ai_actor(label: str) -> bool:
+    """Return whether an actor label should be treated as an AI actor."""
+    return "gpt" in label.lower()
+
+
+def anonymize_actor_labels(actor_names: Sequence[str]) -> Dict[str, str]:
+    """Map actor names to display labels for publication-friendly plots.
+
+    Human participants are anonymized sequentially, while GPT-labelled actors
+    remain identifiable to preserve the comparison of interest.
+    """
+    mapping: Dict[str, str] = {}
+    human_idx = 1
+
+    for name in actor_names:
+        if is_ai_actor(name):
+            mapping[name] = name
+        else:
+            mapping[name] = f"Human {human_idx}"
+            human_idx += 1
+
+    return mapping
+
+
+def select_actors(
+    file_pairs: Sequence[Tuple[str, str]],
+    *,
+    include_humans: Optional[int] = None,
+    include_ais: Optional[int] = None,
+    specific_actors: Optional[Sequence[str]] = None,
+) -> List[Tuple[str, str]]:
+    """Select actors either explicitly or by human/AI quotas.
+
+    When counts are used, actors are taken in the input order so selection stays
+    aligned with the dataset's canonical actor ordering.
+    """
+    if specific_actors is not None:
+        wanted = set(specific_actors)
+        return [(label, path) for label, path in file_pairs if label in wanted]
+
+    humans = [(label, path) for label, path in file_pairs if not is_ai_actor(label)]
+    ais = [(label, path) for label, path in file_pairs if is_ai_actor(label)]
+
+    selected: List[Tuple[str, str]] = []
+
+    if include_humans is not None:
+        selected.extend(humans[:include_humans])
+
+    if include_ais is not None:
+        selected.extend(ais[:include_ais])
+
+    return selected
+
+
+# ---- Audit parsing and bundle construction ----
 
 def extract_audit_id(line: str) -> Optional[Tuple[float, int]]:
     """Extract the audit timestamp and serial number from a raw log line.
@@ -42,6 +244,7 @@ def extract_field_from_line(line: str, key: str) -> Optional[str]:
     m = pattern.search(line)
     if not m:
         return None
+
     val = m.group("val")
     if len(val) >= 2 and val[0] == '"' and val[-1] == '"':
         val = val[1:-1]
@@ -50,6 +253,7 @@ def extract_field_from_line(line: str, key: str) -> Optional[str]:
 
 @dataclass
 class Bundle:
+    """One reconstructed audit event bundle."""
     ts: float
     serial: int
     lines: List[str] = field(default_factory=list)
@@ -69,10 +273,13 @@ def read_bundles(path: str) -> List[Bundle]:
             info = extract_audit_id(line)
             if info is None:
                 continue
+
             ts, serial = info
             key = (ts, serial)
+
             if key not in bundles:
                 bundles[key] = Bundle(ts=ts, serial=serial, lines=[])
+
             bundles[key].lines.append(line)
 
     return sorted(bundles.values(), key=lambda b: (b.ts, b.serial))
@@ -100,6 +307,7 @@ def get_tty_exe_comm(bundle: Bundle) -> Tuple[Optional[str], Optional[str], Opti
     sl = syscall_line(bundle)
     if sl is None:
         return None, None, None
+
     tty = extract_field_from_line(sl, "tty")
     exe = extract_field_from_line(sl, "exe")
     comm = extract_field_from_line(sl, "comm")
@@ -137,6 +345,7 @@ def filter_bundles(bundles: List[Bundle]) -> List[Bundle]:
     mixing user-driven activity with background audit noise.
     """
     kept: List[Bundle] = []
+
     for b in bundles:
         if not has_execve(b):
             continue
@@ -153,7 +362,10 @@ def filter_bundles(bundles: List[Bundle]) -> List[Bundle]:
     return kept
 
 
-def cluster_bundles(bundles: List[Bundle], cluster_window: float = 0.5) -> List[List[Bundle]]:
+def cluster_bundles(
+    bundles: List[Bundle],
+    cluster_window: float = 0.5,
+) -> List[List[Bundle]]:
     """Merge nearby bundles into temporal clusters.
 
     The fixed window treats short bursts of related audit activity as one event,
@@ -205,18 +417,20 @@ def cmd_to_next_cluster_deltas(clusters: List[List[Bundle]], cmd: str) -> List[f
     return out
 
 
-def analyze_file(path: str, cluster_window: float = 0.5, cmd: Optional[str] = None) -> Dict[str, Any]:
+def analyze_file(
+    path: str,
+    cluster_window: float = 0.5,
+    cmd: Optional[str] = None,
+) -> Dict[str, Any]:
     """Run the full timing analysis pipeline for one audit log.
 
     The returned structure contains metadata, all inter-cluster delays, and an
     optional command-conditioned delay series for downstream plotting.
     """
-    # ---- Parse and structure audit activity ----
     bundles = read_bundles(path)
     kept = filter_bundles(bundles)
     clusters = cluster_bundles(kept, cluster_window=cluster_window)
 
-    # ---- Derive timing series ----
     cluster_starts = [c[0].ts for c in clusters]
     deltas = inter_event_deltas(cluster_starts)
 
@@ -241,6 +455,8 @@ def analyze_file(path: str, cluster_window: float = 0.5, cmd: Optional[str] = No
         } if cmd is not None else None,
     }
 
+
+# ---- Plotting ----
 
 def compute_global_log_xlim(
     results: List[Dict[str, Any]],
@@ -318,28 +534,16 @@ def plot_log_hist(
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path)
+        save_path_obj = Path(save_path)
+        save_path_obj.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path_obj)
 
     plt.show()
 
 
-def anonymize_actor_labels(actor_names: List[str]) -> Dict[str, str]:
-    """Map actor names to display labels for publication-friendly plots.
-
-    Human participants are anonymized sequentially, while GPT-labelled actors
-    remain identifiable to preserve the comparison of interest.
-    """
-    mapping: Dict[str, str] = {}
-    human_idx = 1
-
-    for name in actor_names:
-        if "gpt" in name.lower():
-            mapping[name] = name
-        elif name not in mapping:
-            mapping[name] = f"Human {human_idx}"
-            human_idx += 1
-
-    return mapping
+def sanitize_filename_component(s: str) -> str:
+    """Convert a free-form label into a filesystem-friendly filename component."""
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", s)
 
 
 def plot_selected_actors(
@@ -356,7 +560,10 @@ def plot_selected_actors(
     Each selected log is analyzed independently, but the plots reuse a common
     x-range so actor-specific distributions can be compared directly.
     """
-    # ---- Analyze all selected logs before plotting ----
+    if not selected_file_pairs:
+        print("No actor files selected for plotting.")
+        return
+
     selected_results = [
         analyze_file(path, cluster_window=cluster_window, cmd=cmd)
         for _, path in selected_file_pairs
@@ -367,21 +574,31 @@ def plot_selected_actors(
     actor_names = [label for label, _ in selected_file_pairs]
     display_names = anonymize_actor_labels(actor_names)
 
-    # ---- Render actor-level histograms ----
+    if save_dir is not None:
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
+
     for (label, _), result in zip(selected_file_pairs, selected_results):
         display_label = display_names[label]
+        safe_actor = sanitize_filename_component(display_label)
 
         if series == "all":
             values = result["all"]["values"]
             xlabel = "Inter-event time (seconds, log scale)"
             title = f"{display_label}"
-            save_path = f"{save_dir}/{display_label}_all.pdf" if save_dir else None
+            save_path = (
+                str(Path(save_dir) / f"{safe_actor}_all.pdf")
+                if save_dir else None
+            )
         elif series == "cmd":
             cmd_block = result.get("cmd")
             values = cmd_block["values"] if cmd_block is not None else []
             xlabel = f"Time after {cmd} to next cluster (seconds, log scale)"
             title = f"{display_label} - {cmd} to next cluster"
-            save_path = f"{save_dir}/{display_label}_{cmd}.pdf" if save_dir else None
+            safe_cmd = sanitize_filename_component(cmd or "cmd")
+            save_path = (
+                str(Path(save_dir) / f"{safe_actor}_{safe_cmd}.pdf")
+                if save_dir else None
+            )
         else:
             raise ValueError(f"Unknown series: {series}")
 
@@ -395,36 +612,28 @@ def plot_selected_actors(
         )
 
 
+# ---- Script entry point ----
+
 if __name__ == "__main__":
-    # ---- Configuration ----
-    use_wordpress = True
-    dataset = "WordPress" if use_wordpress else "Nextcloud"
-
-    selected_labels = ["Armin", "Hotti", "Torina", "GPT4.1", "GPT4.1_V2", "Hotti"]
-
-    cluster_window = 0.5
-    cmd = "tail"
+    args = parse_args()
 
     file_pairs = [
-        (actor, str(get_log_path(actor, "audit", dataset=dataset)))
-        for actor in analysis_actors(dataset)
+        (actor, str(get_log_path(actor, "audit", dataset=args.dataset)))
+        for actor in analysis_actors(args.dataset)
     ]
 
-    # Restrict plotting to the actors discussed in the current comparison.
-    selected_file_pairs = [
-        (label, path)
-        for label, path in file_pairs
-        if label in selected_labels
-    ]
-
-    # ---- Plot selected comparison ----
-    plot_selected_actors(
-        selected_file_pairs,
-        cluster_window=cluster_window,
-        cmd=cmd,
-        series="all",   # or "cmd"
-        bins_n=50,
-        save_dir="results",
+    selected_file_pairs = select_actors(
+        file_pairs,
+        specific_actors=None,
+        include_humans=args.n_humans,
+        include_ais=args.n_ais,
     )
 
-
+    plot_selected_actors(
+        selected_file_pairs,
+        cluster_window=args.cluster_window,
+        cmd=args.cmd,
+        series=args.series,
+        bins_n=args.bins_n,
+        save_dir=args.save_dir,
+    )

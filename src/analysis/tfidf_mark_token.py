@@ -677,7 +677,7 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument("--which", type=str, default="test", choices=["val", "test"], help="Generate report for VAL or TEST split")
     p.add_argument("--max_lines", type=int, default=200, help="Max examples included in report")
-    p.add_argument("--out_html", type=str, default="playground/tfidf_attribution_report.html")
+    p.add_argument("--out_html", type=str, default="results/tfidf_attribution_report.html")
     p.add_argument("--top_k", type=int, default=3, help="How many top features to extract (highlight uses top-3)")
     p.add_argument("--max_hits_per_feature", type=int, default=4, help="Highlight up to this many occurrences per top feature")
     return p.parse_args()

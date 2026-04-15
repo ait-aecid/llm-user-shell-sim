@@ -13,9 +13,7 @@ agent/scenarios/**/LOGS/
 Data/
 Data_WP/
 data/
-results/
 logs/
 25_data_split_result/
 50_data_split_result/
 ZZZZ_playground/
-_temp_change_shell_scripts/
