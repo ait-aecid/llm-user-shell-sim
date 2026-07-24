@@ -33,7 +33,7 @@ def main():
 
     # Keep specific groups fixed in validation and test to inspect whether the
     # loader and split logic preserve the intended source separation.
-    split = make_splits(y, groups=groups, val_groups=["Armin", "GPT4.1"], test_groups=["GPT5", "GPT4.1_V2"])
+    split = make_splits(y, groups=groups, val_groups=["Alice", "GPT4.1"], test_groups=["GPT5", "GPT4.1_V2"])
 
     # ---- Report and spot-check ----
     print_split_stats(examples, split)
