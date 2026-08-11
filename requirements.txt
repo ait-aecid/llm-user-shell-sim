@@ -7,24 +7,24 @@ tqdm
 scipy
 
 # Deep learning / model pipelines
-torch
-transformers
-sentence-transformers
+# torch
+# transformers
+# sentence-transformers
 openai
 
 # Log template mining
-drain3
+# drain3
 
 # Environment / utility helpers
 python-dotenv
-pexpect
+# pexpect
 
 # Agent framework stack
-langgraph
-langchain-core
-langchain-openai
+# langgraph
+# langchain-core
+# langchain-openai
 pydantic
-mcp
+# mcp
 
 # Optional extras used only in archived playground scripts:
 # pyopencl

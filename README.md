@@ -1,6 +1,6 @@
 # AI-Agent vs. Human System Administrators in Web Application Troubleshooting
 
-This repository contains the code and experimental data for a master's thesis in cyber security that studies whether system logs generated during troubleshooting can distinguish **AI agents** from **human system administrators**.
+This repository contains the code and experimental data for a master's thesis in cyber security that studies whether system logs generated during troubleshooting can distinguish **AI agents** from **human system administrators**. A corresponding paper is currently under review and will be mentioned here once published.
 
 The thesis is built around two controlled web application environments:
 
@@ -789,6 +789,67 @@ Purpose:
 - groups audit lines into bundles and clusters
 - analyzes inter-event timing and command-following timing
 - mainly intended for detailed exploratory analysis rather than bulk pipeline execution
+
+### 5. Actor-level features and exact randomization test
+
+Entry points:
+
+```bash
+python -m src.runners.stats.eda_audit_overview --help   # exploratory per-actor figures
+python -m src.runners.stats.eda_null_overview --help    # exact randomization test
+```
+
+Feature extraction lives in `src/stats_tools/audit_eda.py`: each actor's audit log is
+summarized into 37 scalar features in eight families. Two schedule-contaminated features
+(`span_min`, `events_per_min`) are excluded because `ExperimentAggregated/` concatenates
+sessions, and one zero-variance feature (`mean_proc_branching`) is dropped, leaving 34
+features that enter the test. Eight count-scale features (marked below) grow with log
+volume and are flagged as volume-confounded; the flag rule is the name prefix
+(`n_`, `distinct_`, `long_pause_count`, `complexity_mad`) in `eda_null_overview.py`.
+
+| Family | Feature | Meaning |
+|---|---|---|
+| A Volume & composition | `n_events` (flagged) | total audit events |
+| | `span_min` (excluded) | wall-clock span; measures the experiment schedule |
+| | `events_per_min` (excluded) | event rate; same reason |
+| | `ratio_path_syscall` | PATH records per SYSCALL |
+| | `ratio_execve_syscall` | EXECVE records per SYSCALL |
+| | `ratio_sockaddr_syscall` | SOCKADDR records per SYSCALL |
+| B Timing & rhythm | `median_event_gap_s` | median gap between consecutive events |
+| | `frac_sub100ms_gaps` | fraction of event gaps < 100 ms |
+| | `median_cmd_gap_s` | median gap between consecutive EXECVE commands |
+| | `long_pause_count_30s` (flagged) | number of command gaps > 30 s |
+| C Command vocabulary | `distinct_commands` (flagged) | vocabulary size |
+| | `command_ttr` | type-token ratio of the command stream |
+| | `interactive_tool_rate` | share of interactive tools (`less`, `tail -f`, ...) |
+| | `repeat_command_rate` | share of repeated commands |
+| | `mean_argc` | mean tokens per command line |
+| | `mean_flags_per_cmd` | mean `-`-flags per command |
+| | `chained_command_rate` | share of command lines with pipe/chain tokens |
+| D Syscall fingerprint | `syscall_entropy_bits` | Shannon entropy of the syscall distribution |
+| | `distinct_syscalls` (flagged) | number of distinct syscalls |
+| | `fail_rate` | share of failed syscalls (`success=no`) |
+| | `fileop_comm_rate` | share of events from file-op processes |
+| | `privilege_syscall_rate` | setuid/setgid-family syscall rate |
+| E Sequence & ordering | `command_bigram_entropy_bits` | entropy of command bigrams |
+| | `novel_bigram_rate` | share of bigrams occurring once |
+| | `command_gzip_ratio` | gzip compressibility of the command stream |
+| F Session structure | `interactive_tty_rate` | share of events on a real tty (`pts/*`) |
+| | `distinct_sessions` (flagged) | distinct audit session ids |
+| | `mean_proc_branching` (dropped) | zero variance across actors |
+| G MITRE ATT&CK keys | `distinct_mitre_keys` (flagged) | distinct audit-rule technique tags fired |
+| H Complexity indices | `complexity_gini` | Gini coefficient of the template distribution |
+| | `complexity_entropy` | Shannon entropy of the template distribution |
+| | `complexity_kurtosis` | excess kurtosis of the template distribution |
+| | `complexity_mad` (flagged) | median absolute deviation of raw template counts |
+| | `complexity_gini_seq` | Gini coefficient over template-id windows |
+| | `complexity_entropy_seq` | Shannon entropy over template-id windows |
+| | `complexity_kurtosis_seq` | excess kurtosis over template-id windows |
+| | `complexity_mad_seq` (flagged) | MAD of raw counts over template-id windows |
+
+Family H is computed over Drain template ids in a template space shared across all actors
+of a dataset: the plain variants over single-template frequencies, the `_seq` variants over
+sliding windows of 10 consecutive template ids (stride 2).
 
 ## Post-processing and Result Analysis
 

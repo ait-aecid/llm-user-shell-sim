@@ -17,3 +17,6 @@ logs/
 25_data_split_result/
 50_data_split_result/
 ZZZZ_playground/
+paper/
+docs/
+CLAUDE.md
